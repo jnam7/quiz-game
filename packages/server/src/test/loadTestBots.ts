@@ -118,7 +118,7 @@ async function runLoadTest() {
 function triggerGameStart(adminSocket: Socket<ServerToClientEvents, ClientToServerEvents>) {
   console.log(`🎮 [2단계] 관리자 권한으로 게임 시작 트리거 요청...`);
   // 관리자 인증 후 시작
-  adminSocket.emit('admin:auth', 'quizadmin2026', (authRes) => {
+  adminSocket.emit('admin:auth', 'admin123', (authRes) => {
     if (authRes.success) {
       console.log(`🔑 관리자 인증 성공`);
       adminSocket.emit('admin:start_game', (startRes) => {

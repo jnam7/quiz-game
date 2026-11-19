@@ -37,7 +37,7 @@ export class JsonDatabase {
   }
 
   public getAdminPassword(): string {
-    return this.adminPassword || ADMIN_PASSWORD;
+    return this.adminPassword || process.env.ADMIN_PASSWORD || ADMIN_PASSWORD || 'admin123';
   }
 
   public setAdminPassword(newPassword: string): boolean {
@@ -47,13 +47,14 @@ export class JsonDatabase {
   }
 
   private loadDatabase() {
+    const defaultPw = process.env.ADMIN_PASSWORD || ADMIN_PASSWORD || 'admin123';
     if (fs.existsSync(this.dbPath)) {
       try {
         const raw = fs.readFileSync(this.dbPath, 'utf-8');
         const parsed = JSON.parse(raw);
         this.quizzes = parsed.quizzes || INITIAL_QUIZ_BANK;
         this.history = parsed.history || [];
-        this.adminPassword = parsed.adminPassword || ADMIN_PASSWORD;
+        this.adminPassword = parsed.adminPassword || defaultPw;
         // 모든 문제의 기본 제한시간을 15초로 동기화
         this.quizzes.forEach(q => { q.timeLimit = 15; });
         this.saveDatabase();
@@ -65,16 +66,17 @@ export class JsonDatabase {
     // 최초 실행 시 기본 132개 문제로 초기화
     this.quizzes = [...INITIAL_QUIZ_BANK];
     this.history = [];
-    this.adminPassword = ADMIN_PASSWORD;
+    this.adminPassword = defaultPw;
     this.saveDatabase();
   }
 
   private saveDatabase() {
     try {
+      const defaultPw = process.env.ADMIN_PASSWORD || ADMIN_PASSWORD || 'admin123';
       const data = {
         quizzes: this.quizzes,
         history: this.history,
-        adminPassword: this.adminPassword || ADMIN_PASSWORD,
+        adminPassword: this.adminPassword || defaultPw,
         updatedAt: new Date().toISOString()
       };
       fs.writeFileSync(this.dbPath, JSON.stringify(data, null, 2), 'utf-8');

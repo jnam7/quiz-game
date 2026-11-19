@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS = {
   selectedCategories: [...ALL_QUIZ_CATEGORIES]
 };
 
-export const ADMIN_PASSWORD = 'quizadmin2026'; // 관리자 기본 비밀번호
+export const ADMIN_PASSWORD = (typeof process !== 'undefined' && process.env?.ADMIN_PASSWORD) || 'admin123'; // 관리자 기본 비밀번호
 export const SOCKET_ROOM_MAIN = 'room:survival_quiz_main';
 export const SOCKET_ROOM_ADMIN = 'room:survival_quiz_admin';
 export const SOCKET_ROOM_TV = 'room:survival_quiz_tv';
