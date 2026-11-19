@@ -24,6 +24,17 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
   const [chatInput, setChatInput] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const desktopChatScrollRef = useRef<HTMLDivElement>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 생존자/탈락자 명단 모달
   const [showRoster, setShowRoster] = useState(false);
@@ -194,6 +205,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
     const handleChatMessage = (msg: ChatMessage) => {
       setChatMessages((prev) => [...prev.slice(-49), msg]);
+      setUnreadCount((c) => c + 1);
     };
 
     const handleChatHistory = (history: ChatMessage[]) => {
@@ -248,10 +260,20 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
     };
   }, []);
 
-  // 채팅 스크롤 자동 이동
+  // 모바일 채팅창 열림 또는 데스크톱 전환 시 읽지 않은 수 초기화
+  useEffect(() => {
+    if (isChatOpen || !isMobile) {
+      setUnreadCount(0);
+    }
+  }, [isChatOpen, isMobile]);
+
+  // 채팅 스크롤 자동 이동 (모바일 및 데스크톱)
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+    if (desktopChatScrollRef.current) {
+      desktopChatScrollRef.current.scrollTop = desktopChatScrollRef.current.scrollHeight;
     }
   }, [chatMessages, isChatOpen]);
 
@@ -447,204 +469,191 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
   // 2. 대기실 상태
   if (gameState.status === 'WAITING' || gameState.status === 'STARTING') {
-    return (
-      <div style={{ ...mobileContainerStyle, textAlign: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⏳</div>
-          <h2 style={{ fontSize: '1.5rem', color: '#f8fafc', fontWeight: 800, marginBottom: '16px' }}>
-            대기실 입장 완료
-          </h2>
-          <div style={{ background: '#1e293b', padding: '16px 18px', borderRadius: '14px', marginBottom: '20px', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>나의 닉네임</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#38bdf8' }}>{player.nickname}</div>
-              </div>
-              <button
-                onClick={() => {
-                  setEditNicknameInput(player.nickname);
-                  setEditNickError('');
-                  setIsEditingNickname(true);
-                }}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: '0.85rem',
-                  background: '#334155',
-                  color: '#f8fafc',
-                  border: '1px solid #475569',
-                  borderRadius: '8px',
-                  fontWeight: 600
-                }}
-              >
-                ✏️ 수정
-              </button>
+    const waitingContent = (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⏳</div>
+        <h2 style={{ fontSize: '1.5rem', color: '#f8fafc', fontWeight: 800, marginBottom: '16px' }}>
+          대기실 입장 완료
+        </h2>
+        <div style={{ background: '#1e293b', padding: '16px 18px', borderRadius: '14px', marginBottom: '20px', border: '1px solid #334155', width: '100%', maxWidth: '400px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>나의 닉네임</div>
+              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#38bdf8' }}>{player.nickname}</div>
             </div>
-          </div>
-
-          <p style={{ color: '#cbd5e1', fontSize: '1rem', lineHeight: 1.6, wordBreak: 'keep-all', marginBottom: '20px' }}>
-            관리자가 게임을 시작할 때까지<br />대형 TV 화면을 바라보며 기다려주세요!
-          </p>
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
-              onClick={() => setShowRoster(true)}
-              style={{ padding: '10px 16px', background: '#334155', color: '#38bdf8', fontSize: '0.9rem', borderRadius: '10px' }}
-            >
-              👥 참가자 현황 ({gameState.players.length}명)
-            </button>
-            {!soundUnlocked && (
-              <button
-                onClick={handleUnlockAudio}
-                style={{ padding: '10px 16px', background: '#334155', color: '#cbd5e1', fontSize: '0.9rem', borderRadius: '10px' }}
-              >
-                🔊 효과음 켜기
-              </button>
-            )}
-          </div>
-
-          <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={() => handleLeaveLobby(false)}
+              onClick={() => {
+                setEditNicknameInput(player.nickname);
+                setEditNickError('');
+                setIsEditingNickname(true);
+              }}
               style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                color: '#f87171',
-                padding: '8px 16px',
-                borderRadius: '8px',
+                padding: '8px 12px',
                 fontSize: '0.85rem',
-                cursor: 'pointer',
-                fontWeight: 600
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '8px',
+                fontWeight: 600,
+                cursor: 'pointer'
               }}
             >
-              🚪 대기실 나가기 (참가 취소)
-            </button>
-            <button
-              type="button"
-              onClick={() => window.open('/admin', '_blank')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#64748b',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
-            >
-              🛠️ 관리자 센터 (새창)
+              ✏️ 수정
             </button>
           </div>
         </div>
 
-        {/* 대기실 실시간 채팅 컴포넌트 */}
-        {renderChatBox()}
-        {renderRosterModal()}
-        {renderEditNicknameModal()}
+        <p style={{ color: '#cbd5e1', fontSize: '1rem', lineHeight: 1.6, wordBreak: 'keep-all', marginBottom: '20px' }}>
+          관리자가 게임을 시작할 때까지<br />대형 TV 화면을 바라보며 기다려주세요!
+        </p>
+
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowRoster(true)}
+            style={{ padding: '10px 16px', background: '#334155', color: '#38bdf8', fontSize: '0.9rem', borderRadius: '10px', border: '1px solid #475569', cursor: 'pointer', fontWeight: 600 }}
+          >
+            👥 참가자 현황 ({gameState.players.length}명)
+          </button>
+          {!soundUnlocked && (
+            <button
+              onClick={handleUnlockAudio}
+              style={{ padding: '10px 16px', background: '#334155', color: '#cbd5e1', fontSize: '0.9rem', borderRadius: '10px', border: '1px solid #475569', cursor: 'pointer', fontWeight: 600 }}
+            >
+              🔊 효과음 켜기
+            </button>
+          )}
+        </div>
+
+        <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => handleLeaveLobby(false)}
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#f87171',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            🚪 대기실 나가기 (참가 취소)
+          </button>
+          <button
+            type="button"
+            onClick={() => window.open('/admin', '_blank')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#64748b',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+          >
+            🛠️ 관리자 센터 (새창)
+          </button>
+        </div>
       </div>
     );
+    return renderResponsiveLayout(waitingContent);
   }
-
 
   // 4. 게임 종료 화면 (1등 확정 또는 무승부 시 대기실 이동 버튼)
   if (gameState.status === 'GAME_OVER') {
     const isWinner = gameState.winner?.token === player.token;
-    return (
-      <div style={{ ...mobileContainerStyle, textAlign: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0', overflowY: 'auto' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '8px' }}>{isWinner ? '👑' : '🏁'}</div>
-          <h1 style={{ fontSize: '1.75rem', color: isWinner ? '#facc15' : '#818cf8', fontWeight: 900, marginBottom: '10px' }}>
-            {isWinner ? '🎉 최종 우승! 🎉' : gameState.isDraw ? '🤝 무승부 (전원 탈락)' : '게임 종료'}
-          </h1>
+    const gameOverContent = (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '10px 0', overflowY: 'auto', width: '100%' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '8px' }}>{isWinner ? '👑' : '🏁'}</div>
+        <h1 style={{ fontSize: '1.75rem', color: isWinner ? '#facc15' : '#818cf8', fontWeight: 900, marginBottom: '10px' }}>
+          {isWinner ? '🎉 최종 우승! 🎉' : gameState.isDraw ? '🤝 무승부 (전원 탈락)' : '게임 종료'}
+        </h1>
 
-          {isWinner ? (
-            <div style={{ background: 'rgba(234, 179, 8, 0.2)', border: '2px solid #eab308', borderRadius: '14px', padding: '16px', marginBottom: '16px' }}>
-              <p style={{ fontSize: '1.1rem', color: '#fef08a', fontWeight: 800 }}>
-                축하합니다! CMB 150인 서바이벌 최후의 승자입니다!
-              </p>
-              <div style={{ marginTop: '8px', color: '#fde047', fontSize: '1.2rem', fontWeight: 800 }}>
-                점수: {player.score}점
-              </div>
-            </div>
-          ) : (
-            <p style={{ color: '#cbd5e1', fontSize: '1rem', marginBottom: '16px' }}>
-              우승자: <strong style={{ color: '#facc15' }}>{gameState.winner?.nickname || (gameState.isDraw ? '무승부' : '없음')}</strong>
+        {isWinner ? (
+          <div style={{ background: 'rgba(234, 179, 8, 0.2)', border: '2px solid #eab308', borderRadius: '14px', padding: '16px', marginBottom: '16px', maxWidth: '450px', width: '100%', boxSizing: 'border-box' }}>
+            <p style={{ fontSize: '1.1rem', color: '#fef08a', fontWeight: 800 }}>
+              축하합니다! CMB 150인 서바이벌 최후의 승자입니다!
             </p>
-          )}
-
-          {/* 나의 최종 등수 배너 */}
-          {(() => {
-            const myRankItem = (gameState.topRankings || []).find(r => r.token === player.token);
-            const myRank = myRankItem ? `${myRankItem.rank}위` : '순위권';
-            return (
-              <div style={{ background: '#1e293b', border: '1px solid #475569', borderRadius: '12px', padding: '12px', marginBottom: '14px' }}>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>나의 최종 결과</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc', marginTop: '4px' }}>
-                  {player.nickname} 님: <span style={{ color: '#facc15' }}>{myRank}</span> ({player.score}점)
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 최종 TOP 10 명예의 전당 */}
-          <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '12px', marginBottom: '16px', textAlign: 'left' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fde047', marginBottom: '8px', textAlign: 'center' }}>
-              🏆 최종 명예의 전당 (TOP 1~10위)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
-              {(gameState.topRankings || []).map((r) => {
-                const isMe = r.token === player.token;
-                const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : `${r.rank}위`;
-                return (
-                  <div key={r.token} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: isMe ? 'rgba(99, 102, 241, 0.25)' : '#1e293b', border: isMe ? '1px solid #6366f1' : '1px solid #334155', borderRadius: '8px', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 800, width: '28px', textAlign: 'center' }}>{medal}</span>
-                      <span style={{ fontWeight: isMe ? 800 : 600, color: isMe ? '#818cf8' : '#f8fafc' }}>
-                        {r.nickname} {isMe && '(나)'}
-                      </span>
-                      {r.isAlive && <span style={{ fontSize: '0.7rem', color: '#86efac', background: '#166534', padding: '1px 4px', borderRadius: '4px' }}>생존</span>}
-                    </div>
-                    <div style={{ fontWeight: 700, color: '#38bdf8' }}>{r.score}점</div>
-                  </div>
-                );
-              })}
+            <div style={{ marginTop: '8px', color: '#fde047', fontSize: '1.2rem', fontWeight: 800 }}>
+              점수: {player.score}점
             </div>
           </div>
+        ) : (
+          <p style={{ color: '#cbd5e1', fontSize: '1rem', marginBottom: '16px' }}>
+            우승자: <strong style={{ color: '#facc15' }}>{gameState.winner?.nickname || (gameState.isDraw ? '무승부' : '없음')}</strong>
+          </p>
+        )}
 
-          {/* 대기실로 바로 이동 버튼 */}
-          <button
-            onClick={handleRequestReset}
-            style={{
-              padding: '14px 28px',
-              backgroundColor: '#4f46e5',
-              color: 'white',
-              fontSize: '1.05rem',
-              fontWeight: 800,
-              borderRadius: '12px',
-              boxShadow: '0 8px 25px rgba(79, 70, 229, 0.4)',
-              marginBottom: '12px'
-            }}
-          >
-            🏠 새 게임 대기실로 바로 이동
-          </button>
+        {/* 나의 최종 등수 배너 */}
+        {(() => {
+          const myRankItem = (gameState.topRankings || []).find(r => r.token === player.token);
+          const myRank = myRankItem ? `${myRankItem.rank}위` : '순위권';
+          return (
+            <div style={{ background: '#1e293b', border: '1px solid #475569', borderRadius: '12px', padding: '12px', marginBottom: '14px', maxWidth: '450px', width: '100%', boxSizing: 'border-box' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>나의 최종 결과</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc', marginTop: '4px' }}>
+                {player.nickname} 님: <span style={{ color: '#facc15' }}>{myRank}</span> ({player.score}점)
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 최종 TOP 10 명예의 전당 */}
+        <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '12px', marginBottom: '16px', textAlign: 'left', maxWidth: '450px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fde047', marginBottom: '8px', textAlign: 'center' }}>
+            🏆 최종 명예의 전당 (TOP 1~10위)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+            {(gameState.topRankings || []).map((r) => {
+              const isMe = r.token === player.token;
+              const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : `${r.rank}위`;
+              return (
+                <div key={r.token} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: isMe ? 'rgba(99, 102, 241, 0.25)' : '#1e293b', border: isMe ? '1px solid #6366f1' : '1px solid #334155', borderRadius: '8px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 800, width: '28px', textAlign: 'center' }}>{medal}</span>
+                    <span style={{ fontWeight: isMe ? 800 : 600, color: isMe ? '#818cf8' : '#f8fafc' }}>
+                      {r.nickname} {isMe && '(나)'}
+                    </span>
+                    {r.isAlive && <span style={{ fontSize: '0.7rem', color: '#86efac', background: '#166534', padding: '1px 4px', borderRadius: '4px' }}>생존</span>}
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#38bdf8' }}>{r.score}점</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {renderChatBox()}
-        {renderRosterModal()}
-        {renderEditNicknameModal()}
+        {/* 대기실로 바로 이동 버튼 */}
+        <button
+          onClick={handleRequestReset}
+          style={{
+            padding: '14px 28px',
+            backgroundColor: '#4f46e5',
+            color: 'white',
+            fontSize: '1.05rem',
+            fontWeight: 800,
+            borderRadius: '12px',
+            boxShadow: '0 8px 25px rgba(79, 70, 229, 0.4)',
+            marginBottom: '12px',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          🏠 새 게임 대기실로 바로 이동
+        </button>
       </div>
     );
+    return renderResponsiveLayout(gameOverContent);
   }
 
   // 5. 라운드 진행 중 (문제 풀이, 답변 제출, 및 관전자 모드)
   const currentOptions = roundResult?.options || roundInfo?.options || ['', '', '', ''];
   const hasOptions = currentOptions.some(opt => opt && opt.trim().length > 0);
 
-  return (
-    <div style={{
-      ...mobileContainerStyle,
-      padding: '10px 14px',
-      justifyContent: 'flex-start'
-    }}>
+  const inRoundContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1 }}>
       {/* 👁️ 관전자 모드 상단 고정 배너 */}
       {!player.isAlive && (
         <div style={{
@@ -748,13 +757,13 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
           marginBottom: '8px',
           minHeight: '80px',
-          maxHeight: '140px',
+          maxHeight: isMobile ? '140px' : '180px',
           overflowY: 'auto',
           flexShrink: 0
         }}
       >
         <h2 style={{
-          fontSize: '1.12rem',
+          fontSize: isMobile ? '1.12rem' : '1.35rem',
           color: '#f8fafc',
           lineHeight: 1.45,
           wordBreak: 'keep-all',
@@ -780,7 +789,14 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
       {/* 4지선다 선택지 버튼 */}
       {hasOptions && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px', flexShrink: 0 }}>
+        <div style={{
+          display: isMobile ? 'flex' : 'grid',
+          gridTemplateColumns: isMobile ? undefined : '1fr 1fr',
+          flexDirection: isMobile ? 'column' : undefined,
+          gap: '8px',
+          marginBottom: '8px',
+          flexShrink: 0
+        }}>
           {currentOptions.map((opt, idx) => {
             const isSelected = selectedOption === idx;
             let bg = '#1e293b';
@@ -983,33 +999,209 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           </div>
         );
       })()}
-
-      {/* 실시간 채팅창 컴포넌트 */}
-      {renderChatBox()}
-      {renderRosterModal()}
-      {renderEditNicknameModal()}
     </div>
   );
 
-  // --- 실시간 채팅 UI 함수 ---
-  function renderChatBox() {
+  return renderResponsiveLayout(inRoundContent);
+
+  // --- 실시간 채팅 말풍선 UI ---
+  function renderChatItem(c: ChatMessage, isCompact = false) {
+    const isMe = player && c.nickname === player.nickname;
+    const nameColor = isMe ? '#facc15' : c.isAlive ? '#4ade80' : '#f87171';
+    return (
+      <div
+        key={c.id}
+        style={{
+          background: isMe ? 'rgba(234, 179, 8, 0.12)' : 'rgba(30, 41, 59, 0.7)',
+          border: isMe ? '1px solid rgba(234, 179, 8, 0.4)' : '1px solid rgba(51, 65, 85, 0.8)',
+          borderRadius: '10px',
+          padding: isCompact ? '5px 8px' : '7px 10px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+          wordBreak: 'break-word',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: isCompact ? '0.75rem' : '0.82rem', color: nameColor, fontWeight: 800 }}>
+              [{c.nickname}{isMe ? ' (나)' : ''}]
+            </span>
+            <span style={{
+              fontSize: '0.65rem',
+              padding: '1px 5px',
+              borderRadius: '4px',
+              background: c.isAlive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+              color: c.isAlive ? '#86efac' : '#fca5a5',
+              fontWeight: 700
+            }}>
+              {c.isAlive ? '생존' : '탈락'}
+            </span>
+          </div>
+          {c.timestamp && (
+            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>
+              {new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+        <div style={{ color: '#f8fafc', fontSize: isCompact ? '0.82rem' : '0.9rem', lineHeight: 1.35 }}>
+          {c.message}
+        </div>
+      </div>
+    );
+  }
+
+  // --- 데스크톱/태블릿 전용 고정 사이드바 채팅창 (1/3 비율, 폭 300px~360px 고정) ---
+  function renderDesktopChatSidebar() {
+    return (
+      <div style={{
+        height: '100%',
+        background: 'rgba(15, 23, 42, 0.95)',
+        borderRadius: '16px',
+        border: '1px solid #334155',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '16px',
+        boxSizing: 'border-box',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)'
+      }}>
+        {/* 헤더 */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '12px',
+          borderBottom: '1px solid #334155',
+          marginBottom: '12px',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+              💬 실시간 톡
+            </span>
+            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              ({chatMessages.length})
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+            <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: 700 }}>LIVE</span>
+          </div>
+        </div>
+
+        {/* 메시지 리스트 (Auto Scroll) */}
+        <div
+          ref={desktopChatScrollRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            paddingRight: '4px',
+            marginBottom: '12px'
+          }}
+        >
+          {chatMessages.length === 0 ? (
+            <div style={{ color: '#64748b', textAlign: 'center', margin: 'auto 0', fontSize: '0.9rem' }}>
+              💬 첫 실시간 응원 메시지를 남겨보세요!
+            </div>
+          ) : (
+            chatMessages.map(c => renderChatItem(c, false))
+          )}
+        </div>
+
+        {/* 채팅 입력 폼 */}
+        <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '8px', marginTop: 'auto', flexShrink: 0 }}>
+          <input
+            type="text"
+            placeholder="실시간 응원/메시지..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            maxLength={60}
+            style={{
+              flex: 1,
+              background: '#1e293b',
+              border: '1px solid #475569',
+              color: '#ffffff',
+              padding: '10px 12px',
+              fontSize: '0.88rem',
+              borderRadius: '10px',
+              minHeight: '42px',
+              boxSizing: 'border-box'
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '10px 16px',
+              background: '#6366f1',
+              color: 'white',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              borderRadius: '10px',
+              border: 'none',
+              cursor: 'pointer',
+              minHeight: '42px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            전송
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // --- 모바일 세로 뷰 하단 채팅 UI ---
+  function renderMobileChatBox() {
     return (
       <div style={{
         marginTop: 'auto',
         background: 'rgba(15, 23, 42, 0.95)',
-        borderRadius: '12px',
-        border: '1px solid #334155',
-        padding: '8px 10px',
-        flexShrink: 0
+        borderRadius: '14px',
+        border: '1.5px solid #334155',
+        padding: '8px 12px',
+        flexShrink: 0,
+        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isChatOpen ? '6px' : '4px' }}>
-          <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700 }}>
-            💬 실시간 톡 ({chatMessages.length})
-          </span>
+        {/* 헤더 바 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isChatOpen ? '8px' : '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.82rem', color: '#f8fafc', fontWeight: 800 }}>
+              💬 실시간 톡 ({chatMessages.length})
+            </span>
+            {!isChatOpen && unreadCount > 0 && (
+              <span style={{
+                background: '#ef4444',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 900,
+                padding: '1px 6px',
+                borderRadius: '9999px',
+                animation: 'pulse 1s infinite'
+              }}>
+                NEW {unreadCount}
+              </span>
+            )}
+          </div>
           <button
             type="button"
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            style={{ background: 'transparent', color: '#38bdf8', fontSize: '0.75rem', padding: '2px 6px' }}
+            onClick={() => {
+              setIsChatOpen(!isChatOpen);
+              if (!isChatOpen) setUnreadCount(0);
+            }}
+            style={{
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              color: '#38bdf8',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
           >
             {isChatOpen ? '접기 ▲' : '열기 ▼'}
           </button>
@@ -1019,26 +1211,35 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         <div
           ref={chatScrollRef}
           style={{
-            maxHeight: isChatOpen ? '100px' : '32px',
+            maxHeight: isChatOpen ? '130px' : '36px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px',
-            marginBottom: '6px',
-            fontSize: '0.8rem'
+            gap: '6px',
+            marginBottom: '8px'
           }}
         >
           {chatMessages.length === 0 ? (
-            <div style={{ color: '#64748b', textAlign: 'center', padding: '4px' }}>첫 메시지를 남겨보세요!</div>
+            <div style={{ color: '#64748b', textAlign: 'center', padding: '4px', fontSize: '0.8rem' }}>
+              첫 응원 메시지를 남겨보세요!
+            </div>
+          ) : isChatOpen ? (
+            chatMessages.slice(-30).map(c => renderChatItem(c, true))
           ) : (
-            chatMessages.slice(isChatOpen ? -30 : -1).map((c) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '0.72rem', color: c.isAlive ? '#4ade80' : '#f87171', fontWeight: 'bold', flexShrink: 0 }}>
-                  [{c.nickname}]
-                </span>
-                <span style={{ color: '#f1f5f9', wordBreak: 'break-all' }}>{c.message}</span>
-              </div>
-            ))
+            (() => {
+              const latest = chatMessages[chatMessages.length - 1];
+              const isMe = player && latest.nickname === player.nickname;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ color: isMe ? '#facc15' : latest.isAlive ? '#4ade80' : '#f87171', fontWeight: 800, flexShrink: 0 }}>
+                    [{latest.nickname}]:
+                  </span>
+                  <span style={{ color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {latest.message}
+                  </span>
+                </div>
+              );
+            })()
           )}
         </div>
 
@@ -1046,16 +1247,109 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '6px' }}>
           <input
             type="text"
-            placeholder="응원/메시지 입력..."
+            placeholder="실시간 응원/메시지..."
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             maxLength={60}
-            style={{ flex: 1, padding: '6px 10px', fontSize: '0.85rem', borderRadius: '8px', minHeight: '34px' }}
+            style={{
+              flex: 1,
+              background: '#1e293b',
+              border: '1px solid #475569',
+              color: '#ffffff',
+              padding: '6px 10px',
+              fontSize: '0.85rem',
+              borderRadius: '8px',
+              minHeight: '38px',
+              boxSizing: 'border-box'
+            }}
           />
-          <button type="submit" style={{ padding: '6px 12px', background: '#6366f1', color: 'white', fontSize: '0.85rem', minHeight: '34px' }}>
+          <button
+            type="submit"
+            style={{
+              padding: '6px 14px',
+              background: '#6366f1',
+              color: 'white',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              minHeight: '38px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
             전송
           </button>
         </form>
+      </div>
+    );
+  }
+
+  // --- 반응형 레이아웃 래퍼: 데스크톱/태블릿은 3분할(2:1 비율), 모바일은 세로 스택 ---
+  function renderResponsiveLayout(mainContent: React.ReactNode) {
+    if (!isMobile) {
+      return (
+        <div style={{
+          width: '100%',
+          maxWidth: '1150px',
+          margin: '0 auto',
+          minHeight: '100dvh',
+          height: '100dvh',
+          maxHeight: '100dvh',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '20px',
+          padding: '20px',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}>
+          {/* 좌측 메인 영역 (2/3 비율, col-span-2) */}
+          <div style={{
+            flex: '2 1 0%',
+            minWidth: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: '1px solid #334155',
+            borderRadius: '16px',
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}>
+            {mainContent}
+          </div>
+
+          {/* 우측 채팅창 전용 고정 사이드바 (1/3 비율, 최적 너비 300px~360px 고정) */}
+          <div style={{
+            flex: '1 1 0%',
+            maxWidth: '360px',
+            minWidth: '290px',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {renderDesktopChatSidebar()}
+          </div>
+
+          {renderRosterModal()}
+          {renderEditNicknameModal()}
+        </div>
+      );
+    }
+
+    // 모바일 세로 뷰: 단일 컬럼 유지
+    return (
+      <div style={{
+        ...mobileContainerStyle,
+        padding: '10px 14px',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', marginBottom: '8px' }}>
+          {mainContent}
+        </div>
+        {renderMobileChatBox()}
+        {renderRosterModal()}
+        {renderEditNicknameModal()}
       </div>
     );
   }

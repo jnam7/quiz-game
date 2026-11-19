@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameState, RoundInfo, RoundResult, Player, ChatMessage } from '@quiz/shared';
 import { socket } from '../socket';
 import { soundEngine } from '../utils/sound';
@@ -32,6 +32,13 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
 
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const tvChatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (tvChatScrollRef.current) {
+      tvChatScrollRef.current.scrollTop = tvChatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   // 로컬 IP 또는 공인 터널 URL 가져와 QR코드 생성
   useEffect(() => {
@@ -103,11 +110,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     };
 
     const handleChatMessage = (msg: ChatMessage) => {
-      setChatMessages(prev => [...prev.slice(-19), msg]);
+      setChatMessages(prev => [...prev.slice(-49), msg]);
     };
 
     const handleChatHistory = (history: ChatMessage[]) => {
-      setChatMessages(history.slice(-20));
+      setChatMessages(history.slice(-50));
     };
 
     const handleTunnelUpdated = (newPublicUrl: string) => {
@@ -187,6 +194,195 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
 
   const survivors = gameState.survivors;
   const isUrgent = gameState.status === 'IN_ROUND' && secondsRemaining <= 3;
+
+  const renderBottomStatus = (showTicker: boolean) => (
+    <div
+      style={{
+        marginTop: 'auto',
+        background: 'rgba(15, 23, 42, 0.95)',
+        border: '1px solid #334155',
+        borderRadius: '16px',
+        padding: isMobile ? '8px 12px' : '10px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        flexShrink: 0
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '6px' }}>
+        <div style={{ fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 800, color: '#94a3b8' }}>
+          📊 도전자 현황 (생존: <span style={{ color: '#4ade80' }}>{survivors.length}명</span> / 탈락: <span style={{ color: '#f87171' }}>{gameState.players.length - survivors.length}명</span>)
+        </div>
+
+        {/* 실시간 채팅 최신 티커 (모바일에서 노출) */}
+        {showTicker && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: isMobile ? '100%' : '400px', overflow: 'hidden' }}>
+            <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 700 }}>💬 실시간 톡:</span>
+            {chatMessages.length > 0 ? (
+              <span style={{ fontSize: '0.82rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <strong style={{ color: chatMessages[chatMessages.length - 1].isAlive ? '#4ade80' : '#f87171' }}>
+                  {chatMessages[chatMessages.length - 1].nickname}:
+                </strong>{' '}
+                {chatMessages[chatMessages.length - 1].message}
+              </span>
+            ) : (
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>응원 톡을 남겨보세요!</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 참가자 100인 생존/탈락 타일 리스트 (멀리서도 식별 가능) */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px',
+          maxHeight: isMobile ? '50px' : '65px',
+          overflowY: 'auto'
+        }}
+      >
+        {gameState.players.map(p => (
+          <span
+            key={p.token}
+            style={{
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: p.isAlive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.1)',
+              border: p.isAlive ? '1px solid #22c55e' : '1px solid rgba(239, 68, 68, 0.3)',
+              color: p.isAlive ? '#86efac' : '#94a3b8',
+              textDecoration: p.isAlive ? 'none' : 'line-through'
+            }}
+          >
+            {p.isAlive ? `● ${p.nickname}` : `✕ ${p.nickname}`}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderTvChatPanel = () => (
+    <div
+      style={{
+        height: '100%',
+        background: 'rgba(15, 23, 42, 0.95)',
+        border: '1px solid #334155',
+        borderRadius: '16px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+        boxSizing: 'border-box'
+      }}
+    >
+      {/* 채팅 헤더 */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '12px',
+          borderBottom: '1px solid #334155',
+          marginBottom: '12px',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+            💬 실시간 응원톡
+          </span>
+          <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+            ({chatMessages.length})
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+          <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: 700 }}>LIVE</span>
+        </div>
+      </div>
+
+      {/* 메시지 리스트 (Auto Scroll) */}
+      <div
+        ref={tvChatScrollRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          paddingRight: '4px',
+          marginBottom: '12px'
+        }}
+      >
+        {chatMessages.length === 0 ? (
+          <div style={{ color: '#64748b', textAlign: 'center', margin: 'auto 0', fontSize: '0.9rem' }}>
+            스마트폰으로 첫 응원 메시지를 남겨보세요!
+          </div>
+        ) : (
+          chatMessages.map((c) => (
+            <div
+              key={c.id}
+              style={{
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(51, 65, 85, 0.8)',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '3px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    fontSize: '0.85rem',
+                    color: c.isAlive ? '#4ade80' : '#f87171',
+                    fontWeight: 800
+                  }}>
+                    [{c.nickname}]
+                  </span>
+                  <span style={{
+                    fontSize: '0.65rem',
+                    padding: '1px 5px',
+                    borderRadius: '4px',
+                    background: c.isAlive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: c.isAlive ? '#86efac' : '#fca5a5',
+                    fontWeight: 700
+                  }}>
+                    {c.isAlive ? '생존' : '탈락'}
+                  </span>
+                </div>
+                {c.timestamp && (
+                  <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                    {new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
+              <div style={{ color: '#f8fafc', fontSize: '0.95rem', lineHeight: 1.35, wordBreak: 'break-word' }}>
+                {c.message}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 하단 안내 문구 */}
+      <div style={{
+        background: 'rgba(30, 41, 59, 0.5)',
+        border: '1px solid #334155',
+        borderRadius: '8px',
+        padding: '8px 10px',
+        textAlign: 'center',
+        fontSize: '0.78rem',
+        color: '#94a3b8',
+        flexShrink: 0
+      }}>
+        📱 참가자 스마트폰 화면에서 실시간 톡을 전송할 수 있습니다.
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -276,8 +472,34 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         </div>
       </div>
 
-      {/* 2. 대기실 상태: 초대형 QR코드 및 도전자 현황 */}
-      {gameState.status === 'WAITING' && (
+      {/* 2. 메인 바디 영역: 데스크톱/태블릿은 3분할(좌측 2/3 메인 + 우측 1/3 채팅사이드바), 모바일은 세로 스택 */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '12px' : '20px',
+          minHeight: 0,
+          overflow: isMobile ? 'visible' : 'hidden'
+        }}
+      >
+        {/* 좌측 메인 영역 (2/3 비율, col-span-2) */}
+        <div
+          style={{
+            flex: isMobile ? 'none' : '2 1 0%',
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '12px',
+            height: '100%',
+            overflowY: isMobile ? 'visible' : 'auto'
+          }}
+        >
+          {/* 게임 상태별 메인 스테이지 */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {/* 2. 대기실 상태: 초대형 QR코드 및 도전자 현황 */}
+            {gameState.status === 'WAITING' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px 0' : '0' }}>
           <h1 style={{ fontSize: isMobile ? '1.6rem' : '3.2rem', fontWeight: 900, color: '#818cf8', marginBottom: '8px', textAlign: 'center', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)', wordBreak: 'keep-all' }}>
             🔥 CMB 150인 서바이벌 퀴즈 대기실 🔥
@@ -607,69 +829,27 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           </div>
         </div>
       )}
-
-      {/* 6. 하단 고정: 실시간 생존자 / 탈락자 명단 전광판 (요구사항 4번) */}
-      <div
-        style={{
-          marginTop: 'auto',
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid #334155',
-          borderRadius: '16px',
-          padding: isMobile ? '8px 12px' : '10px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '6px' }}>
-          <div style={{ fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 800, color: '#94a3b8' }}>
-            📊 도전자 현황 (생존: <span style={{ color: '#4ade80' }}>{survivors.length}명</span> / 탈락: <span style={{ color: '#f87171' }}>{gameState.players.length - survivors.length}명</span>)
           </div>
 
-          {/* 실시간 채팅 최신 티커 (요구사항 3번) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: isMobile ? '100%' : '400px', overflow: 'hidden' }}>
-            <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 700 }}>💬 실시간 톡:</span>
-            {chatMessages.length > 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                <strong style={{ color: chatMessages[chatMessages.length - 1].isAlive ? '#4ade80' : '#f87171' }}>
-                  {chatMessages[chatMessages.length - 1].nickname}:
-                </strong>{' '}
-                {chatMessages[chatMessages.length - 1].message}
-              </span>
-            ) : (
-              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>응원 톡을 남겨보세요!</span>
-            )}
-          </div>
+          {/* 하단: 도전자 현황 전광판 타일 */}
+          {renderBottomStatus(isMobile)}
         </div>
 
-        {/* 참가자 100인 생존/탈락 타일 리스트 (멀리서도 식별 가능) */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '6px',
-            maxHeight: isMobile ? '50px' : '65px',
-            overflowY: 'auto'
-          }}
-        >
-          {gameState.players.map(p => (
-            <span
-              key={p.token}
-              style={{
-                padding: '3px 8px',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: p.isAlive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-                border: p.isAlive ? '1px solid #22c55e' : '1px solid rgba(239, 68, 68, 0.3)',
-                color: p.isAlive ? '#86efac' : '#94a3b8',
-                textDecoration: p.isAlive ? 'none' : 'line-through'
-              }}
-            >
-              {p.isAlive ? `● ${p.nickname}` : `✕ ${p.nickname}`}
-            </span>
-          ))}
-        </div>
+        {/* 우측 채팅창 전용 고정 사이드바 (1/3 비율, 최적 너비 300px~360px 고정) */}
+        {!isMobile && (
+          <div
+            style={{
+              flex: '1 1 0%',
+              maxWidth: '360px',
+              minWidth: '300px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            {renderTvChatPanel()}
+          </div>
+        )}
       </div>
     </div>
   );
