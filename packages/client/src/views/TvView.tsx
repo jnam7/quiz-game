@@ -10,6 +10,16 @@ interface TvViewProps {
 }
 
 export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [roundInfo, setRoundInfo] = useState<RoundInfo | undefined>(gameState.currentRoundInfo);
   const [roundResult, setRoundResult] = useState<RoundResult | undefined>(gameState.lastRoundResult);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -182,105 +192,110 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     <div
       style={{
         width: '100vw',
-        height: '100vh',
+        minHeight: '100dvh',
+        height: isMobile ? 'auto' : '100vh',
         background: isUrgent
           ? 'radial-gradient(circle at 50% 50%, #450a0a 0%, #020617 100%)'
           : 'radial-gradient(circle at 50% 30%, #1e1b4b 0%, #030712 100%)',
         color: '#f8fafc',
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 40px',
-        overflow: 'hidden',
+        padding: isMobile ? '12px 14px' : '24px 40px',
+        overflowY: isMobile ? 'auto' : 'hidden',
+        overflowX: 'hidden',
         boxSizing: 'border-box',
         transition: 'background 0.3s ease'
       }}
     >
       {/* 1. 상단 바: 스테이지 정보 / 생존자 수 / 음향 토글 / 실시간 채팅 티커 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '16px', flexWrap: 'wrap' }}>
           <div
             style={{
               background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-              padding: '8px 22px',
+              padding: isMobile ? '6px 14px' : '8px 22px',
               borderRadius: '9999px',
-              fontSize: '1.3rem',
+              fontSize: isMobile ? '1rem' : '1.3rem',
               fontWeight: 900,
               boxShadow: '0 0 25px rgba(168, 85, 247, 0.5)'
             }}
           >
             {roundInfo?.stageName || 'CMB 150인 서바이벌 퀴즈쇼'}
           </div>
-          <div style={{ fontSize: '1.1rem', color: '#94a3b8' }}>
+          <div style={{ fontSize: isMobile ? '0.95rem' : '1.1rem', color: '#94a3b8' }}>
             {roundInfo?.category && `[카테고리: ${roundInfo.category}]`}
           </div>
         </div>
 
         {/* 생존자 & 탈락자 스탯 보드 */}
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: isMobile ? '14px' : '24px', alignItems: 'center', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>생존자</div>
-            <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#4ade80', textShadow: '0 0 15px rgba(74, 222, 128, 0.6)' }}>
-              {survivors.length} <span style={{ fontSize: '1.1rem' }}>명</span>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>생존자</div>
+            <div style={{ fontSize: isMobile ? '1.6rem' : '2.2rem', fontWeight: 900, color: '#4ade80', textShadow: '0 0 15px rgba(74, 222, 128, 0.6)' }}>
+              {survivors.length} <span style={{ fontSize: '0.9rem' }}>명</span>
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>누적 탈락자</div>
-            <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#f87171' }}>
-              {gameState.players.length - survivors.length} <span style={{ fontSize: '1.1rem' }}>명</span>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>누적 탈락자</div>
+            <div style={{ fontSize: isMobile ? '1.6rem' : '2.2rem', fontWeight: 900, color: '#f87171' }}>
+              {gameState.players.length - survivors.length} <span style={{ fontSize: '0.9rem' }}>명</span>
             </div>
           </div>
-          {!soundEnabled && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {!soundEnabled && (
+              <button
+                onClick={toggleSound}
+                style={{
+                  padding: '6px 12px',
+                  background: '#4338ca',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700
+                }}
+              >
+                🔊 음향
+              </button>
+            )}
             <button
-              onClick={toggleSound}
+              onClick={() => window.open('/admin', '_blank')}
               style={{
-                padding: '8px 16px',
-                background: '#4338ca',
-                color: 'white',
+                padding: '6px 12px',
+                background: '#1e293b',
+                border: '1px solid #475569',
+                color: '#c7d2fe',
                 borderRadius: '8px',
-                fontSize: '0.85rem'
+                fontSize: '0.8rem',
+                cursor: 'pointer'
               }}
+              title="관리자 페이지를 새창으로 엽니다"
             >
-              🔊 음향 켜기
+              🛠️ 관리자
             </button>
-          )}
-          <button
-            onClick={() => window.open('/admin', '_blank')}
-            style={{
-              padding: '8px 14px',
-              background: '#1e293b',
-              border: '1px solid #475569',
-              color: '#c7d2fe',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              cursor: 'pointer'
-            }}
-            title="관리자 페이지를 새창으로 엽니다"
-          >
-            🛠️ 관리자 센터 (새창)
-          </button>
+          </div>
         </div>
       </div>
 
       {/* 2. 대기실 상태: 초대형 QR코드 및 도전자 현황 */}
       {gameState.status === 'WAITING' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '3.2rem', fontWeight: 900, color: '#818cf8', marginBottom: '12px', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px 0' : '0' }}>
+          <h1 style={{ fontSize: isMobile ? '1.6rem' : '3.2rem', fontWeight: 900, color: '#818cf8', marginBottom: '8px', textAlign: 'center', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)', wordBreak: 'keep-all' }}>
             🔥 CMB 150인 서바이벌 퀴즈 대기실 🔥
           </h1>
-          <p style={{ fontSize: '1.4rem', color: '#cbd5e1', marginBottom: '20px' }}>
+          <p style={{ fontSize: isMobile ? '0.95rem' : '1.4rem', color: '#cbd5e1', marginBottom: isMobile ? '14px' : '20px', textAlign: 'center', wordBreak: 'keep-all' }}>
             스마트폰 카메라로 아래 QR코드를 스캔하여 지금 즉시 접속하세요!
           </p>
 
           {/* 접속 모드 전환 탭 버튼 */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '8px', marginBottom: isMobile ? '16px' : '20px', width: isMobile ? '100%' : 'auto' }}>
             <button
               onClick={() => setConnectionMode('public')}
               style={{
-                padding: '10px 20px',
+                padding: isMobile ? '8px 14px' : '10px 20px',
                 background: connectionMode === 'public' ? '#4f46e5' : '#1e293b',
                 color: 'white',
                 border: connectionMode === 'public' ? '2px solid #a5b4fc' : '1px solid #475569',
-                fontSize: '1rem',
+                fontSize: isMobile ? '0.85rem' : '1rem',
                 borderRadius: '12px'
               }}
             >
@@ -289,11 +304,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             <button
               onClick={() => setConnectionMode('wifi')}
               style={{
-                padding: '10px 20px',
+                padding: isMobile ? '8px 14px' : '10px 20px',
                 background: connectionMode === 'wifi' ? '#4f46e5' : '#1e293b',
                 color: 'white',
                 border: connectionMode === 'wifi' ? '2px solid #a5b4fc' : '1px solid #475569',
-                fontSize: '1rem',
+                fontSize: isMobile ? '0.85rem' : '1rem',
                 borderRadius: '12px'
               }}
             >
@@ -301,34 +316,35 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '50px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '20px' : '50px', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
             {qrCodeUrl && (
               <div style={{ textAlign: 'center' }}>
                 <div
                   style={{
                     background: 'rgba(255, 255, 255, 0.05)',
-                    padding: '16px',
-                    borderRadius: '24px',
+                    padding: isMobile ? '12px' : '16px',
+                    borderRadius: '20px',
                     border: '2px solid #6366f1',
                     boxShadow: '0 0 40px rgba(99, 102, 241, 0.5)',
-                    marginBottom: '10px'
+                    marginBottom: '8px',
+                    display: 'inline-block'
                   }}
                 >
-                  <img src={qrCodeUrl} alt="QR Code" style={{ width: '250px', height: '250px', display: 'block' }} />
+                  <img src={qrCodeUrl} alt="QR Code" style={{ width: isMobile ? '180px' : '250px', height: isMobile ? '180px' : '250px', display: 'block' }} />
                 </div>
                 {joinUrlText && (
-                  <div style={{ fontSize: '0.95rem', color: '#38bdf8', fontWeight: 'bold', wordBreak: 'break-all', maxWidth: '300px' }}>
+                  <div style={{ fontSize: isMobile ? '0.82rem' : '0.95rem', color: '#38bdf8', fontWeight: 'bold', wordBreak: 'break-all', maxWidth: isMobile ? '240px' : '300px', margin: '0 auto' }}>
                     🌐 {joinUrlText}
                   </div>
                 )}
               </div>
             )}
 
-            <div style={{ minWidth: '340px' }}>
-              <div style={{ fontSize: '1.3rem', marginBottom: '10px' }}>
-                현재 입장 인원: <strong style={{ color: '#38bdf8', fontSize: '1.8rem' }}>{gameState.players.length}</strong> / 150명
+            <div style={{ minWidth: isMobile ? '100%' : '340px', textAlign: isMobile ? 'center' : 'left' }}>
+              <div style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', marginBottom: '8px' }}>
+                현재 입장 인원: <strong style={{ color: '#38bdf8', fontSize: isMobile ? '1.5rem' : '1.8rem' }}>{gameState.players.length}</strong> / 150명
               </div>
-              <div style={{ height: '12px', background: '#334155', borderRadius: '6px', overflow: 'hidden', marginBottom: '20px' }}>
+              <div style={{ height: '10px', background: '#334155', borderRadius: '5px', overflow: 'hidden', marginBottom: '16px' }}>
                 <div
                   style={{
                     height: '100%',
@@ -337,7 +353,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                   }}
                 />
               </div>
-              <p style={{ color: '#94a3b8', fontSize: '1.05rem', lineHeight: 1.6 }}>
+              <p style={{ color: '#94a3b8', fontSize: isMobile ? '0.9rem' : '1.05rem', lineHeight: 1.5 }}>
                 관리자가 게임을 시작하면<br />자동으로 1라운드가 출제됩니다.
               </p>
             </div>
@@ -348,12 +364,12 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       {/* 3. 게임 시작 3, 2, 1 카운트다운 */}
       {countdown !== null && gameState.status === 'STARTING' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ fontSize: '2.5rem', color: '#818cf8', marginBottom: '16px' }}>
+          <div style={{ fontSize: isMobile ? '1.6rem' : '2.5rem', color: '#818cf8', marginBottom: '12px' }}>
             게임 시작까지
           </div>
           <div
             style={{
-              fontSize: '12rem',
+              fontSize: isMobile ? '7rem' : '12rem',
               fontWeight: 900,
               color: '#f43f5e',
               textShadow: '0 0 60px rgba(244, 63, 94, 0.8)',
@@ -369,14 +385,14 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       {(gameState.status === 'IN_ROUND' || gameState.status === 'ROUND_RESULT') && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           {/* 중앙 초대형 카운트다운 타이머 & 답변 제출 현황 게이지 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ fontSize: '1.2rem', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ fontSize: isMobile ? '0.95rem' : '1.2rem', color: '#94a3b8' }}>
               실시간 답변 제출: <strong style={{ color: '#38bdf8' }}>{answeredCount}</strong> / {survivors.length}명
             </div>
             {gameState.status === 'IN_ROUND' && (
               <div
                 style={{
-                  fontSize: '4rem',
+                  fontSize: isMobile ? '2.2rem' : '4rem',
                   fontWeight: 900,
                   color: isUrgent ? '#ef4444' : '#38bdf8',
                   textShadow: isUrgent ? '0 0 30px #ef4444' : '0 0 20px #38bdf8'
@@ -391,21 +407,21 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           <div
             style={{
               background: 'rgba(30, 41, 59, 0.85)',
-              borderRadius: '20px',
-              padding: '30px 40px',
+              borderRadius: '16px',
+              padding: isMobile ? '16px 14px' : '30px 40px',
               border: isUrgent ? '2px solid #ef4444' : '2px solid rgba(255, 255, 255, 0.15)',
               boxShadow: isUrgent ? '0 0 50px rgba(239, 68, 68, 0.4)' : '0 20px 50px rgba(0, 0, 0, 0.5)',
               textAlign: 'center',
-              marginBottom: '16px'
+              marginBottom: '14px'
             }}
           >
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 800, lineHeight: 1.4, color: '#ffffff' }}>
+            <h2 style={{ fontSize: isMobile ? '1.25rem' : '2.4rem', fontWeight: 800, lineHeight: 1.4, color: '#ffffff', wordBreak: 'keep-all' }}>
               {roundInfo?.question}
             </h2>
           </div>
 
           {/* 4지선다 보기 그리드 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '10px' : '16px', marginBottom: '14px' }}>
             {roundInfo?.options.map((option, idx) => {
               let bg = 'rgba(15, 23, 42, 0.8)';
               let border = '2px solid rgba(255, 255, 255, 0.15)';
@@ -428,12 +444,12 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                   style={{
                     background: bg,
                     border,
-                    borderRadius: '16px',
-                    padding: '20px 28px',
+                    borderRadius: '14px',
+                    padding: isMobile ? '12px 16px' : '20px 28px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '1.6rem',
+                    fontSize: isMobile ? '1.05rem' : '1.6rem',
                     fontWeight: 700,
                     color: textColor,
                     transition: 'all 0.3s ease'
@@ -445,22 +461,22 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '42px',
-                        height: '42px',
+                        width: isMobile ? '32px' : '42px',
+                        height: isMobile ? '32px' : '42px',
                         borderRadius: '50%',
                         background: 'rgba(255, 255, 255, 0.15)',
-                        marginRight: '16px',
-                        fontSize: '1.3rem',
+                        marginRight: isMobile ? '10px' : '16px',
+                        fontSize: isMobile ? '1rem' : '1.3rem',
                         fontWeight: 900
                       }}
                     >
                       {idx + 1}
                     </span>
-                    <span>{option}</span>
+                    <span style={{ wordBreak: 'keep-all' }}>{option}</span>
                   </div>
 
                   {gameState.status === 'ROUND_RESULT' && roundResult && (
-                    <div style={{ fontSize: '1.3rem', color: idx === roundResult.correctAnswerIndex ? '#4ade80' : '#f87171' }}>
+                    <div style={{ fontSize: isMobile ? '0.95rem' : '1.3rem', color: idx === roundResult.correctAnswerIndex ? '#4ade80' : '#f87171' }}>
                       {roundResult.distribution[idx] || 0}명 선택
                     </div>
                   )}
@@ -476,22 +492,24 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                 background: 'rgba(15, 23, 42, 0.95)',
                 border: '2px solid #6366f1',
                 borderRadius: '14px',
-                padding: '16px 28px',
+                padding: isMobile ? '12px 14px' : '16px 28px',
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: isMobile ? '8px' : '12px',
                 marginBottom: '10px'
               }}
             >
               <div>
-                <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#4ade80' }}>
+                <span style={{ fontSize: isMobile ? '1.05rem' : '1.3rem', fontWeight: 900, color: '#4ade80' }}>
                   정답: 보기 {roundResult.correctAnswerIndex + 1}번
                 </span>
-                <span style={{ color: '#cbd5e1', fontSize: '1.1rem', marginLeft: '16px' }}>
+                <span style={{ color: '#cbd5e1', fontSize: isMobile ? '0.9rem' : '1.1rem', marginLeft: isMobile ? '0' : '16px', display: isMobile ? 'block' : 'inline', marginTop: isMobile ? '4px' : '0' }}>
                   {roundResult.explanation}
                 </span>
               </div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+              <div style={{ fontSize: isMobile ? '0.95rem' : '1.2rem', fontWeight: 800 }}>
                 탈락: <span style={{ color: '#ef4444' }}>{roundResult.eliminatedCount}명</span> | 생존:{' '}
                 <span style={{ color: '#22c55e' }}>{roundResult.survivorsCount}명</span>
               </div>
@@ -503,9 +521,9 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       {/* 5. 최종 우승자 및 최종 1~10등 명예의 전당 화면 */}
       {gameState.status === 'GAME_OVER' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '3rem' }}>👑</span>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, color: '#facc15', textShadow: '0 0 40px rgba(250, 204, 21, 0.8)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span style={{ fontSize: isMobile ? '2.2rem' : '3rem' }}>👑</span>
+            <h1 style={{ fontSize: isMobile ? '1.6rem' : '2.8rem', fontWeight: 900, color: '#facc15', textShadow: '0 0 40px rgba(250, 204, 21, 0.8)', textAlign: 'center' }}>
               {gameState.winner ? `최종 우승: ${gameState.winner.nickname}!` : '서바이벌 퀴즈쇼 종료'}
             </h1>
           </div>
@@ -515,19 +533,19 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             background: 'rgba(15, 23, 42, 0.9)',
             border: '2px solid rgba(250, 204, 21, 0.5)',
             borderRadius: '20px',
-            padding: '16px 24px',
-            width: '92%',
+            padding: isMobile ? '12px 14px' : '16px 24px',
+            width: '95%',
             maxWidth: '1100px',
             boxShadow: '0 0 50px rgba(0, 0, 0, 0.6)',
             marginBottom: '16px'
           }}>
-            <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fde047', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+            <div style={{ textAlign: 'center', fontSize: isMobile ? '1.1rem' : '1.4rem', fontWeight: 900, color: '#fde047', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
               <span>🏆</span>
-              <span>CMB 서바이벌 퀴즈 최종 명예의 전당 (TOP 1~10위)</span>
+              <span>최종 명예의 전당 (TOP 1~10위)</span>
               <span>🏆</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px' }}>
               {/* 1~5위 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {(gameState.topRankings || []).slice(0, 5).map((r) => {
@@ -538,13 +556,13 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                   const border = is1st ? '2px solid #eab308' : is2nd ? '1px solid #94a3b8' : is3rd ? '1px solid #b45309' : '1px solid #334155';
                   const bg = is1st ? 'rgba(234, 179, 8, 0.2)' : is2nd ? 'rgba(148, 163, 184, 0.15)' : is3rd ? 'rgba(180, 83, 9, 0.15)' : 'rgba(30, 41, 59, 0.6)';
                   return (
-                    <div key={r.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: bg, border, borderRadius: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 900, width: '40px', textAlign: 'center' }}>{medal}</span>
-                        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: is1st ? '#fde047' : '#f8fafc' }}>{r.nickname}</span>
-                        {r.isAlive && <span style={{ fontSize: '0.75rem', background: '#15803d', color: '#86efac', padding: '2px 6px', borderRadius: '4px' }}>생존</span>}
+                    <div key={r.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '6px 10px' : '8px 14px', background: bg, border, borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}>
+                        <span style={{ fontSize: isMobile ? '1rem' : '1.2rem', fontWeight: 900, width: '32px', textAlign: 'center' }}>{medal}</span>
+                        <span style={{ fontSize: isMobile ? '1rem' : '1.15rem', fontWeight: 800, color: is1st ? '#fde047' : '#f8fafc' }}>{r.nickname}</span>
+                        {r.isAlive && <span style={{ fontSize: '0.72rem', background: '#15803d', color: '#86efac', padding: '2px 5px', borderRadius: '4px' }}>생존</span>}
                       </div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8' }}>{r.score}점</div>
+                      <div style={{ fontSize: isMobile ? '0.95rem' : '1.1rem', fontWeight: 800, color: '#38bdf8' }}>{r.score}점</div>
                     </div>
                   );
                 })}
@@ -554,12 +572,12 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {(gameState.topRankings || []).slice(5, 10).map((r) => {
                   return (
-                    <div key={r.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', borderRadius: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1rem', fontWeight: 700, color: '#94a3b8', width: '40px', textAlign: 'center' }}>{r.rank}위</span>
-                        <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f1f5f9' }}>{r.nickname}</span>
+                    <div key={r.token} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '6px 10px' : '8px 14px', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid #334155', borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#94a3b8', width: '32px', textAlign: 'center' }}>{r.rank}위</span>
+                        <span style={{ fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 700, color: '#f1f5f9' }}>{r.nickname}</span>
                       </div>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#38bdf8' }}>{r.score}점</div>
+                      <div style={{ fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 700, color: '#38bdf8' }}>{r.score}점</div>
                     </div>
                   );
                 })}
@@ -571,21 +589,21 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           <button
             onClick={handleResetToLobby}
             style={{
-              padding: '12px 36px',
+              padding: isMobile ? '10px 24px' : '12px 36px',
               backgroundColor: '#4f46e5',
               color: 'white',
-              fontSize: '1.2rem',
+              fontSize: isMobile ? '1.05rem' : '1.2rem',
               fontWeight: 900,
               borderRadius: '14px',
               boxShadow: '0 8px 30px rgba(79, 70, 229, 0.6)',
               marginBottom: '10px'
             }}
           >
-            🏠 새 게임 대기실로 바로 이동하기
+            🏠 새 게임 대기실로 이동
           </button>
 
-          <div style={{ fontSize: '1rem', color: '#94a3b8' }}>
-            총 참가 인원: {gameState.players.length}명 | 총 진행 라운드: {gameState.currentRound}라운드
+          <div style={{ fontSize: isMobile ? '0.85rem' : '1rem', color: '#94a3b8' }}>
+            총 참가: {gameState.players.length}명 | 진행 라운드: {gameState.currentRound}R
           </div>
         </div>
       )}
@@ -597,22 +615,22 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           background: 'rgba(15, 23, 42, 0.95)',
           border: '1px solid #334155',
           borderRadius: '16px',
-          padding: '10px 16px',
+          padding: isMobile ? '8px 12px' : '10px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#94a3b8' }}>
-            📊 실시간 도전자 현황 (생존: <span style={{ color: '#4ade80' }}>{survivors.length}명</span> / 탈락: <span style={{ color: '#f87171' }}>{gameState.players.length - survivors.length}명</span>)
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '6px' }}>
+          <div style={{ fontSize: isMobile ? '0.78rem' : '0.85rem', fontWeight: 800, color: '#94a3b8' }}>
+            📊 도전자 현황 (생존: <span style={{ color: '#4ade80' }}>{survivors.length}명</span> / 탈락: <span style={{ color: '#f87171' }}>{gameState.players.length - survivors.length}명</span>)
           </div>
 
           {/* 실시간 채팅 최신 티커 (요구사항 3번) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '400px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: isMobile ? '100%' : '400px', overflow: 'hidden' }}>
             <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 700 }}>💬 실시간 톡:</span>
             {chatMessages.length > 0 ? (
-              <span style={{ fontSize: '0.85rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: '0.82rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 <strong style={{ color: chatMessages[chatMessages.length - 1].isAlive ? '#4ade80' : '#f87171' }}>
                   {chatMessages[chatMessages.length - 1].nickname}:
                 </strong>{' '}
@@ -630,7 +648,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             display: 'flex',
             flexWrap: 'wrap',
             gap: '6px',
-            maxHeight: '65px',
+            maxHeight: isMobile ? '50px' : '65px',
             overflowY: 'auto'
           }}
         >

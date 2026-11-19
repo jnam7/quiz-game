@@ -8,6 +8,16 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
@@ -318,20 +328,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '16px 12px' : '24px 16px' }}>
       {/* 관리자 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #334155', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '16px', flexDirection: isMobile ? 'column' : 'row', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '1.8rem', color: '#818cf8' }}>🛠️ CMB 150인 서바이벌 퀴즈 관리자 센터</h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+          <h1 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', color: '#818cf8', fontWeight: 900 }}>🛠️ CMB 150인 서바이벌 퀴즈 관리자 센터</h1>
+          <p style={{ color: '#94a3b8', fontSize: isMobile ? '0.8rem' : '0.9rem', marginTop: '4px', lineHeight: 1.5 }}>
             현장 서버 IP: <strong style={{ color: '#38bdf8' }}>{serverIp}:4000</strong>
             {publicUrl && (
-              <> | 외부 공인 URL: <strong style={{ color: '#4ade80' }}>{publicUrl}</strong> (LTE/5G 접속 가능)</>
+              <> | 공인 URL: <strong style={{ color: '#4ade80' }}>{publicUrl}</strong></>
             )}
             {' '}| 상태: <strong style={{ color: '#f59e0b' }}>{gameState.status}</strong>
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button
             onClick={() => {
               setShowPwChangeModal(true);
@@ -341,14 +351,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               setNewPwInput('');
               setConfirmPwInput('');
             }}
-            style={{ padding: '10px 16px', background: '#475569', color: 'white', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+            style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 12px' : '10px 16px', background: '#475569', color: 'white', fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', border: 'none' }}
           >
             🔒 비밀번호 변경
           </button>
           {persistedGameResult && (
             <button
               onClick={() => setShowSavedResultModal(true)}
-              style={{ padding: '10px 16px', background: '#3b82f6', color: 'white', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
+              style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 12px' : '10px 16px', background: '#3b82f6', color: 'white', fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
               title="리셋 전/직전에 완료된 경기의 최종 등수와 점수를 확인합니다"
             >
               📜 직전 경기 등수 다시보기
@@ -356,7 +366,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           )}
           <button
             onClick={handleDownloadExcel}
-            style={{ padding: '10px 18px', background: '#16a34a', color: 'white', fontSize: '0.95rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
+            style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 14px' : '10px 18px', background: '#16a34a', color: 'white', fontSize: isMobile ? '0.85rem' : '0.95rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
           >
             📊 결과 엑셀 다운로드
           </button>
@@ -365,21 +375,21 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
       {/* 🏆 경기 종료 시: 전체 등수 및 최종 결과 관리 보드 (리셋 누르기 전까지 영구 고정 표시) */}
       {gameState.status === 'GAME_OVER' && (
-        <div style={{ background: 'linear-gradient(180deg, #1e1b4b, #0f172a)', border: '2px solid #818cf8', borderRadius: '16px', padding: '24px', marginBottom: '30px', boxShadow: '0 10px 30px rgba(99, 102, 241, 0.3)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px', borderBottom: '1px solid #3730a3', paddingBottom: '14px' }}>
+        <div style={{ background: 'linear-gradient(180deg, #1e1b4b, #0f172a)', border: '2px solid #818cf8', borderRadius: '16px', padding: isMobile ? '16px 12px' : '24px', marginBottom: '24px', boxShadow: '0 10px 30px rgba(99, 102, 241, 0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '16px', borderBottom: '1px solid #3730a3', paddingBottom: '14px' }}>
             <div>
-              <div style={{ fontSize: '0.9rem', color: '#a5b4fc', fontWeight: 700 }}>🏁 이번 경기 최종 집계 결과 (등수 관리 보드)</div>
-              <h2 style={{ fontSize: '1.7rem', color: '#fef08a', fontWeight: 900, marginTop: '4px' }}>
+              <div style={{ fontSize: '0.85rem', color: '#a5b4fc', fontWeight: 700 }}>🏁 이번 경기 최종 집계 결과 (등수 관리 보드)</div>
+              <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.7rem', color: '#fef08a', fontWeight: 900, marginTop: '4px' }}>
                 {gameState.winner ? `👑 우승자: ${gameState.winner.nickname} (${gameState.winner.score}점)` : gameState.isDraw ? '🤝 무승부 (전원 동시 탈락)' : '게임 종료'}
               </h2>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
+              <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
                 * 관리자가 하단의 [게임 리셋] 또는 [전원 대기실 이동]을 누르기 전까지 이 등수표가 유지됩니다.
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', width: isMobile ? '100%' : 'auto' }}>
               <button
                 onClick={handleDownloadExcel}
-                style={{ padding: '10px 18px', background: '#16a34a', color: 'white', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
+                style={{ width: isMobile ? '100%' : 'auto', padding: '10px 18px', background: '#16a34a', color: 'white', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
               >
                 📊 엑셀 다운로드
               </button>
@@ -388,7 +398,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
           {/* 닉네임 검색 필터 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+            <span style={{ fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
               🎖️ 전체 참가자 최종 순위표 (총 {(gameState.topRankings || []).length}명)
             </span>
             <input
@@ -396,20 +406,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               placeholder="참가자 닉네임 검색..."
               value={rankingSearchTerm}
               onChange={(e) => setRankingSearchTerm(e.target.value)}
-              style={{ padding: '8px 14px', background: '#1e293b', border: '1px solid #475569', borderRadius: '8px', color: '#f8fafc', fontSize: '0.9rem', width: '220px' }}
+              style={{ padding: '8px 14px', background: '#1e293b', border: '1px solid #475569', borderRadius: '8px', color: '#f8fafc', fontSize: '0.9rem', width: isMobile ? '100%' : '220px' }}
             />
           </div>
 
           {/* 전체 순위 테이블 */}
-          <div style={{ maxHeight: '380px', overflowY: 'auto', background: '#090d16', borderRadius: '10px', border: '1px solid #312e81' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+          <div style={{ maxHeight: '380px', overflowY: 'auto', overflowX: 'auto', WebkitOverflowScrolling: 'touch', background: '#090d16', borderRadius: '10px', border: '1px solid #312e81' }}>
+            <table style={{ width: '100%', minWidth: '450px', borderCollapse: 'collapse', fontSize: isMobile ? '0.85rem' : '0.95rem' }}>
               <thead>
                 <tr style={{ background: '#1e1b4b', color: '#cbd5e1', textAlign: 'left', position: 'sticky', top: 0, zIndex: 1 }}>
-                  <th style={{ padding: '12px', width: '80px', textAlign: 'center' }}>등수</th>
-                  <th style={{ padding: '12px' }}>닉네임</th>
-                  <th style={{ padding: '12px' }}>최종 점수</th>
-                  <th style={{ padding: '12px' }}>최종 상태</th>
-                  <th style={{ padding: '12px' }}>탈락 라운드</th>
+                  <th style={{ padding: '10px', width: '70px', textAlign: 'center' }}>등수</th>
+                  <th style={{ padding: '10px' }}>닉네임</th>
+                  <th style={{ padding: '10px' }}>최종 점수</th>
+                  <th style={{ padding: '10px' }}>최종 상태</th>
+                  <th style={{ padding: '10px' }}>탈락 라운드</th>
                 </tr>
               </thead>
               <tbody>
@@ -420,21 +430,21 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                     const isTop3 = r.rank <= 3;
                     return (
                       <tr key={r.token} style={{ borderBottom: '1px solid #1e293b', background: isTop3 ? 'rgba(99, 102, 241, 0.18)' : 'transparent' }}>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 800, color: r.rank === 1 ? '#facc15' : r.rank === 2 ? '#e2e8f0' : r.rank === 3 ? '#d97706' : '#94a3b8' }}>
+                        <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 800, color: r.rank === 1 ? '#facc15' : r.rank === 2 ? '#e2e8f0' : r.rank === 3 ? '#d97706' : '#94a3b8' }}>
                           {medal}
                         </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#f8fafc' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#f8fafc' }}>
                           {r.nickname}
                         </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#38bdf8' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#38bdf8' }}>
                           {r.score}점
                         </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.8rem', background: r.isAlive ? '#166534' : '#7f1d1d', color: r.isAlive ? '#86efac' : '#fca5a5' }}>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.78rem', background: r.isAlive ? '#166534' : '#7f1d1d', color: r.isAlive ? '#86efac' : '#fca5a5' }}>
                             {r.isAlive ? '최종 생존' : '탈락'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>
+                        <td style={{ padding: '8px 10px', color: '#94a3b8' }}>
                           {r.eliminatedRound ? `${r.eliminatedRound}라운드` : (r.isAlive ? '우승 완주' : '-')}
                         </td>
                       </tr>
@@ -448,13 +458,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
       {/* 📜 직전 경기 등수 다시보기 모달 (리셋 후에도 언제든 조회 가능) */}
       {showSavedResultModal && persistedGameResult && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: '#0f172a', border: '2px solid #6366f1', borderRadius: '16px', maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '8px' : '16px' }}>
+          <div style={{ background: '#0f172a', border: '2px solid #6366f1', borderRadius: '16px', maxWidth: '750px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 12px' : '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '14px', marginBottom: '16px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#fde047', fontWeight: 800 }}>📜 직전 경기 최종 등수 및 기록</h3>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
-                  종료 시각: {persistedGameResult.endedAt} | 우승: <strong style={{ color: '#facc15' }}>{persistedGameResult.winnerNickname || (persistedGameResult.isDraw ? '무승부' : '없음')}</strong> | 총 참가자: {persistedGameResult.rankings.length}명
+                <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.4rem', color: '#fde047', fontWeight: 800 }}>📜 직전 경기 최종 등수 및 기록</h3>
+                <div style={{ fontSize: isMobile ? '0.75rem' : '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
+                  종료: {persistedGameResult.endedAt} | 우승: <strong style={{ color: '#facc15' }}>{persistedGameResult.winnerNickname || (persistedGameResult.isDraw ? '무승부' : '없음')}</strong> | 총 {persistedGameResult.rankings.length}명
                 </div>
               </div>
               <button
@@ -465,31 +475,31 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '420px', borderCollapse: 'collapse', fontSize: isMobile ? '0.82rem' : '0.9rem' }}>
                 <thead>
                   <tr style={{ background: '#1e293b', color: '#cbd5e1', textAlign: 'left', position: 'sticky', top: 0, zIndex: 1 }}>
-                    <th style={{ padding: '10px', textAlign: 'center', width: '70px' }}>등수</th>
-                    <th style={{ padding: '10px' }}>닉네임</th>
-                    <th style={{ padding: '10px' }}>점수</th>
-                    <th style={{ padding: '10px' }}>최종 상태</th>
-                    <th style={{ padding: '10px' }}>탈락 라운드</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center', width: '60px' }}>등수</th>
+                    <th style={{ padding: '8px 10px' }}>닉네임</th>
+                    <th style={{ padding: '8px 10px' }}>점수</th>
+                    <th style={{ padding: '8px 10px' }}>상태</th>
+                    <th style={{ padding: '8px 10px' }}>탈락 라운드</th>
                   </tr>
                 </thead>
                 <tbody>
                   {persistedGameResult.rankings.map(r => (
                     <tr key={r.token} style={{ borderBottom: '1px solid #334155', background: r.rank <= 3 ? 'rgba(99, 102, 241, 0.15)' : 'transparent' }}>
-                      <td style={{ padding: '10px', textAlign: 'center', fontWeight: 800, color: r.rank === 1 ? '#facc15' : r.rank === 2 ? '#e2e8f0' : r.rank === 3 ? '#d97706' : '#94a3b8' }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 800, color: r.rank === 1 ? '#facc15' : r.rank === 2 ? '#e2e8f0' : r.rank === 3 ? '#d97706' : '#94a3b8' }}>
                         {r.rank === 1 ? '🥇 1위' : r.rank === 2 ? '🥈 2위' : r.rank === 3 ? '🥉 3위' : `${r.rank}위`}
                       </td>
-                      <td style={{ padding: '10px', fontWeight: 700, color: '#f8fafc' }}>{r.nickname}</td>
-                      <td style={{ padding: '10px', color: '#38bdf8', fontWeight: 700 }}>{r.score}점</td>
-                      <td style={{ padding: '10px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', background: r.isAlive ? '#166534' : '#7f1d1d', color: r.isAlive ? '#86efac' : '#fca5a5' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 700, color: '#f8fafc' }}>{r.nickname}</td>
+                      <td style={{ padding: '8px 10px', color: '#38bdf8', fontWeight: 700 }}>{r.score}점</td>
+                      <td style={{ padding: '8px 10px' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', background: r.isAlive ? '#166534' : '#7f1d1d', color: r.isAlive ? '#86efac' : '#fca5a5' }}>
                           {r.isAlive ? '생존' : '탈락'}
                         </span>
                       </td>
-                      <td style={{ padding: '10px', color: '#94a3b8' }}>
+                      <td style={{ padding: '8px 10px', color: '#94a3b8' }}>
                         {r.eliminatedRound ? `${r.eliminatedRound}라운드` : (r.isAlive ? '완주' : '-')}
                       </td>
                     </tr>
@@ -525,10 +535,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         }}>
           <div style={{
             background: '#1e293b', border: '1px solid #475569', borderRadius: '16px',
-            maxWidth: '420px', width: '100%', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)'
+            maxWidth: '420px', width: '100%', padding: isMobile ? '18px 16px' : '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '1.25rem', color: '#f8fafc', fontWeight: 800 }}>🔒 관리자 비밀번호 변경</h3>
+              <h3 style={{ fontSize: isMobile ? '1.15rem' : '1.25rem', color: '#f8fafc', fontWeight: 800 }}>🔒 관리자 비밀번호 변경</h3>
               <button
                 onClick={() => setShowPwChangeModal(false)}
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
@@ -600,31 +610,31 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
       )}
 
       {/* 1. 상단 컨트롤 패널 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: isMobile ? '14px' : '20px', marginBottom: '24px' }}>
         {/* 게임 제어 */}
-        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '16px' }}>
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px' }}>
           <h3 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#f8fafc' }}>🎮 실시간 게임 제어</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px' }}>
             <button
               onClick={handleStartGame}
               disabled={gameState.status !== 'WAITING' && gameState.status !== 'GAME_OVER'}
-              style={{ flex: 1, padding: '12px', background: '#4f46e5', color: 'white' }}
+              style={{ gridColumn: isMobile ? 'span 2' : 'span 1', padding: '12px', background: '#4f46e5', color: 'white', fontWeight: 700 }}
             >
-              게임 시작
+              🚀 게임 시작
             </button>
             <button
               onClick={handlePause}
               disabled={gameState.status !== 'IN_ROUND'}
-              style={{ padding: '12px', background: '#f59e0b', color: 'black' }}
+              style={{ padding: '12px', background: '#f59e0b', color: 'black', fontWeight: 700 }}
             >
-              일시정지
+              ⏸️ 일시정지
             </button>
             <button
               onClick={handleResume}
               disabled={gameState.status !== 'PAUSED'}
-              style={{ padding: '12px', background: '#10b981', color: 'white' }}
+              style={{ padding: '12px', background: '#10b981', color: 'white', fontWeight: 700 }}
             >
-              재개
+              ▶️ 재개
             </button>
             <button
               onClick={handleSkip}
@@ -636,7 +646,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             <button
               onClick={handleRandomQuiz}
               style={{
-                padding: '12px 16px',
+                gridColumn: isMobile ? 'span 2' : 'span 1',
+                padding: '12px 14px',
                 background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
                 color: 'white',
                 fontWeight: 800,
@@ -648,17 +659,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             <button
               onClick={handleMoveToLobby}
               style={{
-                padding: '12px 18px',
+                gridColumn: isMobile ? 'span 2' : 'span 1',
+                padding: '12px 14px',
                 background: '#0284c7',
                 color: 'white',
                 fontWeight: 700
               }}
             >
-              🏠 전원 강제 대기실 이동
+              🏠 전원 대기실 이동
             </button>
             <button
               onClick={handleReset}
-              style={{ padding: '12px', background: '#e11d48', color: 'white' }}
+              style={{ padding: '12px', background: '#e11d48', color: 'white', fontWeight: 700 }}
             >
               게임 리셋
             </button>
@@ -667,26 +679,26 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               style={{ padding: '12px', background: '#b91c1c', color: 'white', fontWeight: 700 }}
               title="대기 중인 모든 참가자를 퇴장시키고 인원을 0명으로 초기화합니다"
             >
-              🧹 참가자 전원 퇴장 (0명 초기화)
+              🧹 전원 퇴장 (0명)
             </button>
           </div>
         </div>
 
         {/* 접속 QR코드 프리뷰 */}
-        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           {qrCodeDataUrl && (
-            <img src={qrCodeDataUrl} alt="QR Code" style={{ width: '100px', height: '100px', borderRadius: '8px' }} />
+            <img src={qrCodeDataUrl} alt="QR Code" style={{ width: '90px', height: '90px', borderRadius: '8px', flexShrink: 0 }} />
           )}
           <div>
             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#cbd5e1' }}>모바일 접속 QR코드</div>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '4px 0 10px' }}>
+            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '4px 0 8px' }}>
               참가자들에게 QR코드를 공유하세요.
             </p>
             {qrCodeDataUrl && (
               <a
                 href={qrCodeDataUrl}
                 download="quiz_join_qr.png"
-                style={{ color: '#38bdf8', fontSize: '0.85rem', textDecoration: 'underline' }}
+                style={{ color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'underline' }}
               >
                 QR 이미지 다운로드
               </a>
@@ -695,55 +707,55 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         </div>
 
         {/* 생존 통계 */}
-        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '16px' }}>
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px' }}>
           <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#f8fafc' }}>📈 진행 통계</h3>
           <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
             <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>총 참가자</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#38bdf8' }}>{gameState.players.length}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>총 참가자</div>
+              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#38bdf8' }}>{gameState.players.length}</div>
             </div>
             <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>생존자</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#4ade80' }}>{gameState.survivors.length}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>생존자</div>
+              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#4ade80' }}>{gameState.survivors.length}</div>
             </div>
             <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>현재 라운드</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b' }}>R{gameState.currentRound}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>현재 라운드</div>
+              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#f59e0b' }}>R{gameState.currentRound}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* 🎯 출제 문제 카테고리 선택 (체크된 카테고리만 출제) */}
-      <div style={{ background: '#1e293b', padding: '22px', borderRadius: '16px', marginBottom: '30px', border: '2px solid #4f46e5', boxShadow: '0 8px 24px rgba(79, 70, 229, 0.25)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
+      <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '22px', borderRadius: '16px', marginBottom: '24px', border: '2px solid #4f46e5', boxShadow: '0 8px 24px rgba(79, 70, 229, 0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
           <div>
-            <h3 style={{ fontSize: '1.25rem', color: '#818cf8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              🎯 출제 문제 카테고리 선택
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 10px', borderRadius: '9999px' }}>
-                체크된 카테고리의 문제만 출제됩니다
+            <h3 style={{ fontSize: isMobile ? '1.15rem' : '1.25rem', color: '#818cf8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span>🎯 출제 문제 카테고리 선택</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '9999px' }}>
+                체크된 카테고리만 출제
               </span>
             </h3>
-            <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginTop: '6px' }}>
+            <p style={{ color: '#cbd5e1', fontSize: isMobile ? '0.82rem' : '0.9rem', marginTop: '6px' }}>
               선택된 카테고리: <strong style={{ color: '#4ade80' }}>{currentSelectedCategories.length}개</strong>
-              {' '}| 출제 가능 문제: <strong style={{ color: '#facc15' }}>{totalAvailableQuizzesCount}문제</strong>
+              {' '}| 출제 가능: <strong style={{ color: '#facc15' }}>{totalAvailableQuizzesCount}문제</strong>
               {currentSelectedCategories.length === 1 && (
-                <span style={{ marginLeft: '10px', color: '#f43f5e', fontWeight: 800, background: 'rgba(244, 63, 94, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
-                  ⚡ 단일 카테고리 집중 출제 모드 작동 중!
+                <span style={{ marginLeft: '8px', color: '#f43f5e', fontWeight: 800, background: 'rgba(244, 63, 94, 0.15)', padding: '2px 6px', borderRadius: '6px' }}>
+                  ⚡ 단일 카테고리 집중 모드
                 </span>
               )}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
             <button
               onClick={handleSelectAllCategories}
-              style={{ padding: '8px 16px', background: '#3730a3', color: '#e0e7ff', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px', border: '1px solid #6366f1', cursor: 'pointer' }}
+              style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', background: '#3730a3', color: '#e0e7ff', fontSize: '0.82rem', fontWeight: 700, borderRadius: '8px', border: '1px solid #6366f1', cursor: 'pointer' }}
             >
               ✅ 전체 선택
             </button>
             <button
               onClick={handleDeselectAllCategories}
-              style={{ padding: '8px 16px', background: '#0f172a', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, borderRadius: '8px', border: '1px solid #475569', cursor: 'pointer' }}
+              style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', background: '#0f172a', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, borderRadius: '8px', border: '1px solid #475569', cursor: 'pointer' }}
             >
               초기화 (1개만)
             </button>
@@ -751,7 +763,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         </div>
 
         {/* 카테고리 체크박스 그리드 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(210px, 1fr))', gap: isMobile ? '8px' : '12px' }}>
           {ALL_QUIZ_CATEGORIES.map((cat) => {
             const isChecked = currentSelectedCategories.includes(cat);
             const count = quizzes.filter(q => q.category === cat && q.isApproved).length;
@@ -761,8 +773,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 14px',
+                  gap: isMobile ? '8px' : '12px',
+                  padding: isMobile ? '10px 10px' : '12px 14px',
                   background: isChecked ? 'rgba(99, 102, 241, 0.22)' : '#0f172a',
                   border: isChecked ? '2px solid #818cf8' : '1px solid #334155',
                   borderRadius: '12px',
@@ -776,13 +788,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => handleToggleCategory(cat)}
-                  style={{ width: '20px', height: '20px', accentColor: '#6366f1', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer' }}
                 />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: isChecked ? 800 : 500, color: isChecked ? '#f8fafc' : '#94a3b8' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: isMobile ? '0.88rem' : '0.95rem', fontWeight: isChecked ? 800 : 500, color: isChecked ? '#f8fafc' : '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {cat}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: isChecked ? '#38bdf8' : '#64748b', marginTop: '2px', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.78rem', color: isChecked ? '#38bdf8' : '#64748b', marginTop: '2px', fontWeight: 600 }}>
                     승인 {count}문제
                   </div>
                 </div>
@@ -793,12 +805,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
       </div>
 
       {/* 2. 참가자 목록 & 강제 탈락 관리 */}
-      <div style={{ background: '#1e293b', padding: '20px', borderRadius: '16px', marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '14px', color: '#f8fafc' }}>
+      <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginBottom: '14px', color: '#f8fafc' }}>
           👥 참가자 실시간 관리 ({gameState.players.length}명)
         </h3>
-        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        <div style={{ maxHeight: '280px', overflowY: 'auto', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', minWidth: '480px', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
               <tr style={{ background: '#0f172a', textAlign: 'left', position: 'sticky', top: 0, zIndex: 1 }}>
                 <th style={{ padding: '8px', width: '60px', textAlign: 'center' }}>순위</th>
@@ -853,20 +865,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
       </div>
 
       {/* 3. 문제은행 관리 (CRUD) */}
-      <div style={{ background: '#1e293b', padding: '20px', borderRadius: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '1.2rem', color: '#f8fafc' }}>
-            📚 문제은행 관리 (총 {quizzes.length}개 등록됨)
+      <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', color: '#f8fafc' }}>
+            📚 문제은행 관리 (총 {quizzes.length}개)
           </h3>
-          <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-            승인된 문제: <strong style={{ color: '#4ade80' }}>{quizzes.filter(q => q.isApproved).length}개</strong>
+          <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+            승인: <strong style={{ color: '#4ade80' }}>{quizzes.filter(q => q.isApproved).length}개</strong>
           </div>
         </div>
 
         {/* 신규 문제 등록 폼 */}
-        <form onSubmit={handleAddQuiz} style={{ background: '#0f172a', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
-          <h4 style={{ fontSize: '1rem', color: '#38bdf8', marginBottom: '12px' }}>➕ 새 문제 직접 추가</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+        <form onSubmit={handleAddQuiz} style={{ background: '#0f172a', padding: isMobile ? '14px 12px' : '16px', borderRadius: '12px', marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '0.95rem', color: '#38bdf8', marginBottom: '12px' }}>➕ 새 문제 직접 추가</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
             <input
               type="text"
               placeholder="문제 제목"
@@ -890,7 +902,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
             {[0, 1, 2, 3].map((idx) => (
               <input
                 key={idx}
@@ -906,7 +918,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr auto', gap: '10px' }}>
             <select
               value={newQuiz.answerIndex}
               onChange={(e) => setNewQuiz({ ...newQuiz, answerIndex: Number(e.target.value) })}
@@ -930,8 +942,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         </form>
 
         {/* 문제 목록 테이블 */}
-        <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <div style={{ maxHeight: '350px', overflowY: 'auto', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#0f172a', textAlign: 'left' }}>
                 <th style={{ padding: '8px' }}>ID</th>
