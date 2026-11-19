@@ -11,16 +11,22 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: #030712;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
