@@ -35,6 +35,10 @@ let publicTunnelUrl = '';
 let sshProcess: ChildProcess | null = null;
 let isReconnectingTunnel = false;
 
+// 1. Render 및 클라우드 즉시 응답 헬스체크 라우트 (최상단 배치)
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
@@ -175,14 +179,26 @@ app.get('/api/server-info', (req, res) => {
 
 // SPA 라우팅 지원 (HTML5 History API fallback)
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io') || req.path === '/healthz' || req.path === '/health') {
     return next();
   }
   const indexPath = path.join(clientDistPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    next();
+    // clientDistPath가 없더라도 서버가 죽지 않고 기본 HTML 응답을 제공
+    res.status(200).send(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMB 150인 서바이벌 퀴즈</title>
+</head>
+<body style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: white;">
+  <h1>CMB 서바이벌 퀴즈 서버 정상 가동 중</h1>
+  <p>클라이언트 dist 빌드가 진행 중이거나 준비되지 않았습니다. 잠시 후 새로고침해 주세요.</p>
+</body>
+</html>`);
   }
 });
 
