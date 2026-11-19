@@ -57,6 +57,22 @@ export class JsonDatabase {
         this.adminPassword = parsed.adminPassword || defaultPw;
         // 모든 문제의 기본 제한시간을 15초로 동기화
         this.quizzes.forEach(q => { q.timeLimit = 15; });
+
+        // INITIAL_QUIZ_BANK의 신규 문제가 기존 DB에 누락되어 있다면 자동 병합
+        const existingQuestions = new Set(this.quizzes.map(q => q.question.trim()));
+        let addedCount = 0;
+        for (const item of INITIAL_QUIZ_BANK) {
+          if (!existingQuestions.has(item.question.trim())) {
+            const nextId = this.quizzes.reduce((max, cur) => Math.max(max, cur.id), 0) + 1;
+            this.quizzes.push({ ...item, id: nextId });
+            existingQuestions.add(item.question.trim());
+            addedCount++;
+          }
+        }
+        if (addedCount > 0) {
+          console.log(`📚 [문제은행 동기화] 신규 문제 ${addedCount}개가 DB에 자동 추가되었습니다. (총 ${this.quizzes.length}개)`);
+        }
+
         this.saveDatabase();
         return;
       } catch (err) {

@@ -750,7 +750,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           </div>
         </div>
 
-        {/* 9개 카테고리 체크박스 그리드 */}
+        {/* 카테고리 체크박스 그리드 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '12px' }}>
           {ALL_QUIZ_CATEGORIES.map((cat) => {
             const isChecked = currentSelectedCategories.includes(cat);
@@ -878,15 +878,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               onChange={(e) => setNewQuiz({ ...newQuiz, category: e.target.value as QuizCategory })}
               style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #475569' }}
             >
-              <option value="일반 상식">일반 상식</option>
-              <option value="넌센스">넌센스</option>
-              <option value="과학 및 역사">과학 및 역사</option>
-              <option value="스포츠">스포츠</option>
-              <option value="영화 및 음악">영화 및 음악</option>
-              <option value="속담 및 맞춤법">속담 및 맞춤법</option>
-              <option value="회사 생활 및 직장인 유머">회사 생활 및 직장인 유머</option>
-              <option value="순발력">순발력</option>
-              <option value="함정 문제">함정 문제</option>
+              {ALL_QUIZ_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
             <input
               type="number"

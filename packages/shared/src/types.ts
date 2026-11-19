@@ -7,7 +7,10 @@ export type QuizCategory =
   | '속담 및 맞춤법'
   | '회사 생활 및 직장인 유머'
   | '순발력'
-  | '함정 문제';
+  | '함정 문제'
+  | '초등상식'
+  | '중등상식'
+  | '고등상식';
 
 export interface QuizItem {
   id: number;
