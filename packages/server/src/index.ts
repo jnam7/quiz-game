@@ -29,7 +29,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = Number(process.env.PORT) || 4000;
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
 let publicTunnelUrl = '';
 let sshProcess: ChildProcess | null = null;
@@ -194,7 +194,8 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 // --- 고가용성 자동 재연결 터널 매니저 (로컬 개발 환경 전용) ---
 function connectTunnel(targetPort: number) {
-  if (isProduction) return; // Render 등 프로덕션 환경에서는 SSH 터널 비활성화
+  // Render 등 프로덕션/배포 환경에서는 SSH 터널 완전 비활성화
+  if (isProduction) return;
   if (isReconnectingTunnel) return;
   isReconnectingTunnel = true;
 
@@ -205,7 +206,7 @@ function connectTunnel(targetPort: number) {
     sshProcess = null;
   }
 
-  console.log('🔄 [터널 연결 및 복구 시도 중...]');
+  console.log('🔄 [로컬 터널 연결 및 복구 시도 중...]');
   try {
     const child = spawn('ssh', [
       '-o', 'StrictHostKeyChecking=no',
@@ -274,7 +275,7 @@ if (!isProduction) {
   setInterval(() => {
     if (!sshProcess || sshProcess.killed) {
       console.log('🔍 [헬스체크] 터널 프로세스 재기동 필요 감지');
-      connectTunnel(Number(port));
+      connectTunnel(port);
     }
   }, 30000);
 }
@@ -294,7 +295,7 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-httpServer.listen(Number(port), '0.0.0.0', () => {
+httpServer.listen(port, '0.0.0.0', () => {
   const localIp = getLocalNetworkIp();
   console.log(`=======================================================`);
   console.log(`🚀 [CMB 150인 서바이벌 퀴즈 서버 - ${isProduction ? 'Render 프로덕션 배포 모드' : '로컬 개발 모드'} 가동]`);
@@ -304,7 +305,7 @@ httpServer.listen(Number(port), '0.0.0.0', () => {
   if (!isProduction) {
     console.log(`📱 스마트폰 (사내 Wi-Fi): http://${localIp}:${port}/`);
     console.log(`⏳ 외부 접속(LTE/5G)용 자동 복구 HTTPS 터널 시작 중...`);
-    connectTunnel(Number(port));
+    connectTunnel(port);
   } else {
     console.log(`🌐 [Render.com 배포 완료] 웹 서비스 및 실시간 소켓이 준비되었습니다.`);
     if (process.env.RENDER_EXTERNAL_URL) {
