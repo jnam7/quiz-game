@@ -134,9 +134,17 @@ export interface ClientToServerEvents {
     callback: (res: { success: boolean; message?: string; player?: Player }) => void
   ) => void;
   'game:request_reset': () => void; // 게임 종료 후 대기실 복귀 요청
+  'player:leave': (
+    data: { token?: string },
+    callback?: (res: { success: boolean }) => void
+  ) => void; // 참가자 뒤로가기/창닫기 시 퇴장 요청
 
   // 관리자
   'admin:auth': (password: string, callback: (res: { success: boolean }) => void) => void;
+  'admin:change_password': (
+    data: { currentPassword: string; newPassword: string },
+    callback: (res: { success: boolean; message?: string }) => void
+  ) => void;
   'admin:start_game': (callback?: (res: { success: boolean }) => void) => void;
   'admin:pause_game': () => void;
   'admin:resume_game': () => void;

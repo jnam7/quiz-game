@@ -53,6 +53,66 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
     }
   };
 
+  // 참가자 자발적 퇴장 (뒤로가기, 창 닫기, 나가기 버튼 클릭 시)
+  const handleLeaveLobby = (isUnload = false) => {
+    const savedToken = localStorage.getItem(TOKEN_KEY) || player?.token;
+    if (savedToken) {
+      try {
+        socket.emit('player:leave', { token: savedToken });
+      } catch {}
+    }
+    localStorage.removeItem(TOKEN_KEY);
+    setPlayer(null);
+    if (!isUnload) {
+      socket.disconnect();
+      setTimeout(() => {
+        socket.connect();
+      }, 150);
+    }
+  };
+
+  // 스마트폰 뒤로가기(popstate) 및 창닫기(beforeunload, pagehide) 감지하여 즉시 퇴장 처리
+  useEffect(() => {
+    const onPopState = () => {
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      if (savedToken || player) {
+        handleLeaveLobby(false);
+      }
+    };
+
+    const onBeforeUnload = () => {
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      if (savedToken && gameState.status === 'WAITING') {
+        try {
+          socket.emit('player:leave', { token: savedToken });
+          socket.disconnect();
+        } catch {}
+        localStorage.removeItem(TOKEN_KEY);
+      }
+    };
+
+    const onPageHide = () => {
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      if (savedToken && gameState.status === 'WAITING') {
+        try {
+          socket.emit('player:leave', { token: savedToken });
+          socket.disconnect();
+        } catch {}
+        localStorage.removeItem(TOKEN_KEY);
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('pagehide', onPageHide);
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [player, gameState.status]);
+
   useEffect(() => {
     restorePlayerSession();
 
@@ -196,6 +256,9 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         setPlayer(res.player);
         localStorage.setItem(TOKEN_KEY, res.player.token);
         localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
+        try {
+          window.history.pushState({ inLobby: true }, '', window.location.href);
+        } catch {}
       } else {
         setErrorMessage(res.message || '참가에 실패했습니다.');
       }
@@ -398,7 +461,23 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
             )}
           </div>
 
-          <div style={{ marginTop: '16px' }}>
+          <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => handleLeaveLobby(false)}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#f87171',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              🚪 대기실 나가기 (참가 취소)
+            </button>
             <button
               type="button"
               onClick={() => window.open('/admin', '_blank')}

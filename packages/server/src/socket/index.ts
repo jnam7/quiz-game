@@ -98,10 +98,27 @@ export function setupSocketHandlers(
       }
     });
 
+    // 2-3. 스마트폰 참가자 뒤로가기 / 브라우저 닫기 시 즉시 퇴장 처리
+    socket.on('player:leave', (data, callback) => {
+      try {
+        const token = data?.token;
+        if (token) {
+          gameEngine.removePlayer(token);
+        } else {
+          gameEngine.handleDisconnect(socket.id);
+        }
+        if (callback) callback({ success: true });
+      } catch (err) {
+        console.error('[player:leave Error]:', err);
+        if (callback) callback({ success: false });
+      }
+    });
+
     // 3. 관리자 비밀번호 인증
     socket.on('admin:auth', (password, callback) => {
       try {
-        if (password === ADMIN_PASSWORD) {
+        const currentAdminPw = gameEngine.getDatabase().getAdminPassword();
+        if (password === currentAdminPw) {
           socket.join(SOCKET_ROOM_ADMIN);
           if (callback) callback({ success: true });
         } else {
@@ -110,6 +127,33 @@ export function setupSocketHandlers(
       } catch (err) {
         console.error('[admin:auth Error]:', err);
         if (callback) callback({ success: false });
+      }
+    });
+
+    // 3-1. 관리자 비밀번호 변경
+    socket.on('admin:change_password', (data, callback) => {
+      try {
+        const db = gameEngine.getDatabase();
+        const currentAdminPw = db.getAdminPassword();
+        if (!data || !data.currentPassword || !data.newPassword) {
+          if (callback) callback({ success: false, message: '현재 비밀번호와 새 비밀번호를 모두 입력해주세요.' });
+          return;
+        }
+        if (data.currentPassword !== currentAdminPw) {
+          if (callback) callback({ success: false, message: '현재 비밀번호가 일치하지 않습니다.' });
+          return;
+        }
+        const trimmedNew = (data.newPassword || '').trim();
+        if (trimmedNew.length < 4) {
+          if (callback) callback({ success: false, message: '새 비밀번호는 최소 4자리 이상이어야 합니다.' });
+          return;
+        }
+        db.setAdminPassword(trimmedNew);
+        console.log('🔑 [관리자 비밀번호 변경 완료]');
+        if (callback) callback({ success: true, message: '관리자 비밀번호가 성공적으로 변경되었습니다.' });
+      } catch (err) {
+        console.error('[admin:change_password Error]:', err);
+        if (callback) callback({ success: false, message: '비밀번호 변경 처리 중 오류가 발생했습니다.' });
       }
     });
 

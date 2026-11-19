@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { QuizItem, GameState, INITIAL_QUIZ_BANK } from '@quiz/shared';
+import { QuizItem, GameState, INITIAL_QUIZ_BANK, ADMIN_PASSWORD } from '@quiz/shared';
 import * as XLSX from 'xlsx';
 
 export interface GameHistoryRecord {
@@ -25,6 +25,7 @@ export class JsonDatabase {
   private dbPath: string;
   private quizzes: QuizItem[] = [];
   private history: GameHistoryRecord[] = [];
+  private adminPassword?: string;
 
   constructor() {
     const dataDir = path.resolve(__dirname, '../../data');
@@ -35,6 +36,16 @@ export class JsonDatabase {
     this.loadDatabase();
   }
 
+  public getAdminPassword(): string {
+    return this.adminPassword || ADMIN_PASSWORD;
+  }
+
+  public setAdminPassword(newPassword: string): boolean {
+    this.adminPassword = newPassword;
+    this.saveDatabase();
+    return true;
+  }
+
   private loadDatabase() {
     if (fs.existsSync(this.dbPath)) {
       try {
@@ -42,6 +53,7 @@ export class JsonDatabase {
         const parsed = JSON.parse(raw);
         this.quizzes = parsed.quizzes || INITIAL_QUIZ_BANK;
         this.history = parsed.history || [];
+        this.adminPassword = parsed.adminPassword || ADMIN_PASSWORD;
         // 모든 문제의 기본 제한시간을 15초로 동기화
         this.quizzes.forEach(q => { q.timeLimit = 15; });
         this.saveDatabase();
@@ -53,6 +65,7 @@ export class JsonDatabase {
     // 최초 실행 시 기본 132개 문제로 초기화
     this.quizzes = [...INITIAL_QUIZ_BANK];
     this.history = [];
+    this.adminPassword = ADMIN_PASSWORD;
     this.saveDatabase();
   }
 
@@ -61,6 +74,7 @@ export class JsonDatabase {
       const data = {
         quizzes: this.quizzes,
         history: this.history,
+        adminPassword: this.adminPassword || ADMIN_PASSWORD,
         updatedAt: new Date().toISOString()
       };
       fs.writeFileSync(this.dbPath, JSON.stringify(data, null, 2), 'utf-8');

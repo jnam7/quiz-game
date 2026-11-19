@@ -185,15 +185,45 @@ export class GameEngine {
     return { success: true, player };
   }
 
+  // --- 플레이어 퇴장/제거 (대기실에서는 완전 제거, 진행 중에는 오프라인 처리) ---
+  public removePlayer(tokenOrSocketId: string): boolean {
+    const token = this.socketToToken.get(tokenOrSocketId) || tokenOrSocketId;
+    const player = this.players.get(token);
+    if (!player) return false;
+
+    if (this.status === 'WAITING') {
+      this.players.delete(token);
+      for (const [sId, tok] of this.socketToToken.entries()) {
+        if (tok === token) {
+          this.socketToToken.delete(sId);
+        }
+      }
+      console.log(`[Player Removed in WAITING] ${player.nickname} (남은 대기 인원: ${this.players.size}명)`);
+      this.syncState();
+      return true;
+    } else {
+      player.isOnline = false;
+      this.syncState();
+      return true;
+    }
+  }
+
   public handleDisconnect(socketId: string) {
     const token = this.socketToToken.get(socketId);
     if (!token) return;
 
     const player = this.players.get(token);
     if (player) {
-      player.isOnline = false;
-      console.log(`[Player Disconnected] ${player.nickname} (Offline 처리됨, 상태 보존)`);
-      this.syncState();
+      if (this.status === 'WAITING') {
+        this.players.delete(token);
+        this.socketToToken.delete(socketId);
+        console.log(`[Player Disconnected in WAITING - Removed] ${player.nickname} (남은 대기 인원: ${this.players.size}명)`);
+        this.syncState();
+      } else {
+        player.isOnline = false;
+        console.log(`[Player Disconnected] ${player.nickname} (Offline 처리됨, 상태 보존)`);
+        this.syncState();
+      }
     }
   }
 

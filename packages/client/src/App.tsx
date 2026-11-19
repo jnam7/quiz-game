@@ -35,9 +35,24 @@ export default function App() {
     const handlePopState = () => setPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
 
+    // 모바일 브라우저 닫기/새로고침 시 소켓 즉시 정리
+    const handleUnload = () => {
+      const token = localStorage.getItem('quiz_survival_player_token');
+      if (token) {
+        try {
+          socket.emit('player:leave', { token });
+          socket.disconnect();
+        } catch {}
+      }
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+
     return () => {
       socket.off('game:state_sync');
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
       socket.disconnect();
     };
   }, []);

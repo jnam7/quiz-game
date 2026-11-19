@@ -33,6 +33,51 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   });
   const [showSavedResultModal, setShowSavedResultModal] = useState(false);
 
+  // 관리자 비밀번호 변경 상태
+  const [showPwChangeModal, setShowPwChangeModal] = useState(false);
+  const [currentPwInput, setCurrentPwInput] = useState('');
+  const [newPwInput, setNewPwInput] = useState('');
+  const [confirmPwInput, setConfirmPwInput] = useState('');
+  const [pwChangeError, setPwChangeError] = useState('');
+  const [pwChangeSuccess, setPwChangeSuccess] = useState('');
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwChangeError('');
+    setPwChangeSuccess('');
+
+    if (!currentPwInput) {
+      setPwChangeError('현재 비밀번호를 입력해주세요.');
+      return;
+    }
+    if (!newPwInput || newPwInput.trim().length < 4) {
+      setPwChangeError('새 비밀번호는 4자리 이상이어야 합니다.');
+      return;
+    }
+    if (newPwInput !== confirmPwInput) {
+      setPwChangeError('새 비밀번호와 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    socket.emit('admin:change_password', {
+      currentPassword: currentPwInput,
+      newPassword: newPwInput.trim()
+    }, (res) => {
+      if (res.success) {
+        setPwChangeSuccess(res.message || '비밀번호가 성공적으로 변경되었습니다.');
+        setCurrentPwInput('');
+        setNewPwInput('');
+        setConfirmPwInput('');
+        setTimeout(() => {
+          setShowPwChangeModal(false);
+          setPwChangeSuccess('');
+        }, 1500);
+      } else {
+        setPwChangeError(res.message || '비밀번호 변경 실패');
+      }
+    });
+  };
+
   // 새 문제 입력 폼 상태
   const [newQuiz, setNewQuiz] = useState<{
     question: string;
@@ -258,7 +303,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <input
             type="password"
-            placeholder="관리자 비밀번호 (기본: quizadmin2026)"
+            placeholder="관리자 비밀번호 입력"
             value={passwordInput}
             onChange={(e) => setPasswordInput(e.target.value)}
             style={{ padding: '12px', fontSize: '1rem' }}
@@ -287,6 +332,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              setShowPwChangeModal(true);
+              setPwChangeError('');
+              setPwChangeSuccess('');
+              setCurrentPwInput('');
+              setNewPwInput('');
+              setConfirmPwInput('');
+            }}
+            style={{ padding: '10px 16px', background: '#475569', color: 'white', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+          >
+            🔒 비밀번호 변경
+          </button>
           {persistedGameResult && (
             <button
               onClick={() => setShowSavedResultModal(true)}
@@ -454,6 +512,89 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                 닫기
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔒 관리자 비밀번호 변경 모달 */}
+      {showPwChangeModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            background: '#1e293b', border: '1px solid #475569', borderRadius: '16px',
+            maxWidth: '420px', width: '100%', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#f8fafc', fontWeight: 800 }}>🔒 관리자 비밀번호 변경</h3>
+              <button
+                onClick={() => setShowPwChangeModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '6px' }}>현재 비밀번호</label>
+                <input
+                  type="password"
+                  value={currentPwInput}
+                  onChange={(e) => setCurrentPwInput(e.target.value)}
+                  placeholder="현재 관리자 비밀번호 입력"
+                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '6px' }}>새 비밀번호 (4자리 이상)</label>
+                <input
+                  type="password"
+                  value={newPwInput}
+                  onChange={(e) => setNewPwInput(e.target.value)}
+                  placeholder="새로운 비밀번호 입력"
+                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '6px' }}>새 비밀번호 확인</label>
+                <input
+                  type="password"
+                  value={confirmPwInput}
+                  onChange={(e) => setConfirmPwInput(e.target.value)}
+                  placeholder="새 비밀번호 다시 입력"
+                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                />
+              </div>
+
+              {pwChangeError && (
+                <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 600, padding: '8px 12px', background: 'rgba(239,68,68,0.15)', borderRadius: '6px' }}>
+                  {pwChangeError}
+                </div>
+              )}
+              {pwChangeSuccess && (
+                <div style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600, padding: '8px 12px', background: 'rgba(74,222,128,0.15)', borderRadius: '6px' }}>
+                  {pwChangeSuccess}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '12px', background: '#6366f1', color: 'white', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                >
+                  변경 저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPwChangeModal(false)}
+                  style={{ padding: '12px 18px', background: '#334155', color: '#cbd5e1', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                >
+                  취소
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
