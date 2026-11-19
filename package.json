@@ -1,0 +1,22 @@
+{
+  "name": "survival-quiz-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:shared": "npm --workspace=@quiz/shared run build",
+    "build:client": "npm --workspace=@quiz/client run build",
+    "build:server": "npm --workspace=@quiz/server run build",
+    "build": "npm --workspace=@quiz/shared run build && npm --workspace=@quiz/client run build && npm --workspace=@quiz/server run build",
+    "start": "node packages/server/dist/index.js",
+    "dev:shared": "npm --workspace=@quiz/shared run build:watch",
+    "dev:server": "npm --workspace=@quiz/server run dev",
+    "dev:client": "npm --workspace=@quiz/client run dev",
+    "test:bot": "npm --workspace=@quiz/server run test:bot"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
