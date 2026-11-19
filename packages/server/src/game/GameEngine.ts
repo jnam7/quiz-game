@@ -38,6 +38,7 @@ export class GameEngine {
 
   private gameStartedAt?: number;
   private gameEndedAt?: number;
+  private lastRoundResult?: RoundResult;
 
   // 이벤트 콜백 함수들
   private emitStateSync: (state: GameState) => void;
@@ -232,7 +233,7 @@ export class GameEngine {
     socketId: string,
     answerIndex: number,
     clientToken?: string
-  ): { success: boolean; message?: string } {
+  ): { success: boolean; message?: string; isSpectator?: boolean } {
     let token = this.socketToToken.get(socketId) || clientToken;
     if (!token || !this.players.has(token)) {
       return { success: false, message: '인증되지 않은 플레이어입니다. 새로고침 후 다시 입장해주세요.' };
@@ -246,52 +247,52 @@ export class GameEngine {
       player.isOnline = true;
     }
 
-    // 1. 탈락자 제출 차단
-    if (!player.isAlive) {
-      return { success: false, message: '이미 탈락한 상태입니다.' };
-    }
-
-    // 2. 현재 라운드 진행 중 상태 확인
+    // 1. 현재 라운드 진행 중 상태 확인
     if (this.status !== 'IN_ROUND' || !this.activeQuiz) {
       return { success: false, message: '현재 답변을 제출할 수 있는 시간이 아닙니다.' };
     }
 
-    // 3. 서버 기준 시간 초과 검증 (지연된 패킷 원천 거부)
+    // 2. 서버 기준 시간 초과 검증 (지연된 패킷 원천 거부)
     const now = Date.now();
     if (now > this.roundEndTime + 500) { // 0.5초 네트워크 버퍼
       return { success: false, message: '제한시간이 마감되었습니다.' };
     }
 
-    // 4. 중복 제출 차단 (답변 수정 불가 원칙)
+    // 3. 중복 제출 차단 (답변 수정 불가 원칙)
     if (player.selectedAnswer !== undefined) {
       return { success: false, message: '이미 답변을 제출하셨습니다.' };
     }
 
-    // 5. 답안 안전하게 기록
+    // 4. 답안 안전하게 기록 (탈락한 관전자도 연습 풀이 가능)
+    const isSpectator = !player.isAlive;
     player.selectedAnswer = answerIndex;
     player.answeredAt = now - this.roundStartTime;
 
-    const survivors = this.getSurvivors();
-    const answeredCount = survivors.filter(p => p.selectedAnswer !== undefined).length;
+    if (!isSpectator) {
+      const survivors = this.getSurvivors();
+      const answeredCount = survivors.filter(p => p.selectedAnswer !== undefined).length;
 
-    this.emitPlayerAnswered(player.token, answeredCount, survivors.length);
-    // 150명 동시 제출 시 CPU/네트워크 병목 방지: 경량 emitPlayerAnswered로 알림 처리
+      this.emitPlayerAnswered(player.token, answeredCount, survivors.length);
+      // 150명 동시 제출 시 CPU/네트워크 병목 방지: 경량 emitPlayerAnswered로 알림 처리
 
-    // 모든 참여자가 제한시간 전에 답변을 마쳤을 경우 즉시 라운드 마감 및 정답 확인
-    const onlineSurvivors = survivors.filter(p => p.isOnline);
-    const targetSurvivors = onlineSurvivors.length > 0 ? onlineSurvivors : survivors;
-    const allAnswered = targetSurvivors.length > 0 && targetSurvivors.every(p => p.selectedAnswer !== undefined);
+      // 모든 참여자가 제한시간 전에 답변을 마쳤을 경우 즉시 라운드 마감 및 정답 확인
+      const onlineSurvivors = survivors.filter(p => p.isOnline);
+      const targetSurvivors = onlineSurvivors.length > 0 ? onlineSurvivors : survivors;
+      const allAnswered = targetSurvivors.length > 0 && targetSurvivors.every(p => p.selectedAnswer !== undefined);
 
-    if (allAnswered) {
-      console.log(`[All Participants Answered] 참여자 전원(${answeredCount}/${targetSurvivors.length}명) 선택 완료 -> 즉시 정답 확인으로 전환`);
-      if (this.roundTimeoutTimer) {
-        clearTimeout(this.roundTimeoutTimer);
-        this.roundTimeoutTimer = null;
+      if (allAnswered) {
+        console.log(`[All Participants Answered] 참여자 전원(${answeredCount}/${targetSurvivors.length}명) 선택 완료 -> 즉시 정답 확인으로 전환`);
+        if (this.roundTimeoutTimer) {
+          clearTimeout(this.roundTimeoutTimer);
+          this.roundTimeoutTimer = null;
+        }
+        setTimeout(() => this.finishRound(), 150);
       }
-      setTimeout(() => this.finishRound(), 150);
+    } else {
+      console.log(`[Spectator Answer] 관전자 ${player.nickname} 연습 답안 제출 (보기 ${answerIndex + 1})`);
     }
 
-    return { success: true };
+    return { success: true, isSpectator };
   }
 
   // --- 게임 시작 (3, 2, 1 카운트다운) ---
@@ -368,8 +369,9 @@ export class GameEngine {
 
     this.currentRoundNumber++;
     this.status = 'IN_ROUND';
+    this.lastRoundResult = undefined;
 
-    // 생존자들의 답변 초기화
+    // 참가자(생존자 및 관전자) 답변 초기화
     for (const p of this.players.values()) {
       p.selectedAnswer = undefined;
       p.answeredAt = undefined;
@@ -452,8 +454,9 @@ export class GameEngine {
 
     this.currentRoundNumber++;
     this.status = 'IN_ROUND';
+    this.lastRoundResult = undefined;
 
-    // 생존자들의 답변 초기화
+    // 참가자(생존자 및 관전자) 답변 초기화
     for (const p of this.players.values()) {
       p.selectedAnswer = undefined;
       p.answeredAt = undefined;
@@ -588,6 +591,8 @@ export class GameEngine {
     const result: RoundResult = {
       roundNumber: this.currentRoundNumber,
       quizId: quiz.id,
+      question: quiz.question,
+      options: quiz.options,
       correctAnswerIndex: quiz.answerIndex,
       explanation: quiz.explanation,
       survivorsCount: survivors.length,
@@ -596,6 +601,7 @@ export class GameEngine {
       distribution,
       answersCount
     };
+    this.lastRoundResult = result;
 
     console.log(`[Round ${this.currentRoundNumber} Ended] 정답: 보기 ${quiz.answerIndex + 1}, 생존: ${survivors.length}명, 탈락: ${eliminatedPlayers.length}명`);
 
@@ -860,6 +866,7 @@ export class GameEngine {
         serverEndTime: this.roundEndTime
       } : undefined,
       winner,
+      lastRoundResult: this.lastRoundResult,
       settings: this.settings,
       gameStartedAt: this.gameStartedAt,
       gameEndedAt: this.gameEndedAt

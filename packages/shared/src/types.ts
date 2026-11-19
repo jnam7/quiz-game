@@ -64,6 +64,8 @@ export interface RoundInfo {
 export interface RoundResult {
   roundNumber: number;
   quizId: number;
+  question?: string;
+  options?: [string, string, string, string];
   correctAnswerIndex: number;
   explanation: string;
   survivorsCount: number;
@@ -126,7 +128,7 @@ export interface ClientToServerEvents {
   ) => void;
   'player:submit_answer': (
     data: { answerIndex: number; clientTimestamp: number; token?: string },
-    callback: (res: { success: boolean; message?: string }) => void
+    callback: (res: { success: boolean; message?: string; isSpectator?: boolean }) => void
   ) => void;
   'chat:send': (
     data: { message: string; token?: string },

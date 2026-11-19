@@ -281,7 +281,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
   };
 
   const handleSelectOption = (index: number) => {
-    if (isSubmitted || !player?.isAlive || gameState.status !== 'IN_ROUND') return;
+    if (isSubmitted || gameState.status !== 'IN_ROUND' || !player) return;
 
     setSelectedOption(index);
     setIsSubmitted(true);
@@ -544,65 +544,6 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
     );
   }
 
-  // 3. 탈락자 화면
-  if (!player.isAlive && gameState.status !== 'GAME_OVER') {
-    return (
-      <div style={{ ...mobileContainerStyle, textAlign: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
-          {/* 헤더 내 닉네임 및 수정 버튼 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', background: '#1e293b', padding: '8px 14px', borderRadius: '10px' }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-              참가자: <strong style={{ color: '#f8fafc' }}>{player.nickname}</strong>
-            </span>
-            <button
-              onClick={() => {
-                setEditNicknameInput(player.nickname);
-                setEditNickError('');
-                setIsEditingNickname(true);
-              }}
-              style={{ background: 'transparent', color: '#38bdf8', fontSize: '0.8rem', padding: '2px 6px', border: '1px solid #475569', borderRadius: '6px' }}
-            >
-              ✏️ 변경
-            </button>
-          </div>
-
-          <div style={{ fontSize: '3rem', marginBottom: '8px' }}>💥</div>
-          <h2 style={{ fontSize: '1.6rem', color: '#f87171', fontWeight: 900, marginBottom: '4px' }}>
-            아쉽습니다!
-          </h2>
-          <h3 style={{ fontSize: '1.1rem', color: '#fca5a5', marginBottom: '16px' }}>
-            당신은 탈락했습니다!
-          </h3>
-
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
-            <div style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: '4px' }}>
-              탈락 사유: {player.eliminatedReason === 'TIMEOUT' ? '제한시간 초과 (미응답)' : '오답 선택'}
-            </div>
-            <div style={{ color: '#fca5a5', fontSize: '0.85rem' }}>
-              탈락 라운드: {player.eliminatedRound || gameState.currentRound}라운드
-            </div>
-            <div style={{ marginTop: '6px', fontSize: '1.05rem', fontWeight: 700, color: '#fef08a' }}>
-              최종 획득 점수: {player.score}점
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
-            <button
-              onClick={() => setShowRoster(true)}
-              style={{ padding: '8px 16px', background: '#1e293b', color: '#4ade80', fontSize: '0.85rem', borderRadius: '8px' }}
-            >
-              👥 생존자 ({gameState.survivors.length}) / 탈락자 명단 보기
-            </button>
-          </div>
-        </div>
-
-        {/* 관전자 실시간 응원 채팅창 */}
-        {renderChatBox()}
-        {renderRosterModal()}
-        {renderEditNicknameModal()}
-      </div>
-    );
-  }
 
   // 4. 게임 종료 화면 (1등 확정 또는 무승부 시 대기실 이동 버튼)
   if (gameState.status === 'GAME_OVER') {
@@ -694,12 +635,51 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
     );
   }
 
-  // 5. 라운드 진행 중 (문제 풀이 및 답변 제출)
+  // 5. 라운드 진행 중 (문제 풀이, 답변 제출, 및 관전자 모드)
+  const currentOptions = roundResult?.options || roundInfo?.options || ['', '', '', ''];
+  const hasOptions = currentOptions.some(opt => opt && opt.trim().length > 0);
+
   return (
     <div style={{
       ...mobileContainerStyle,
-      padding: '12px 14px'
+      padding: '10px 14px',
+      justifyContent: 'flex-start'
     }}>
+      {/* 👁️ 관전자 모드 상단 고정 배너 */}
+      {!player.isAlive && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'linear-gradient(90deg, rgba(88, 28, 135, 0.7), rgba(30, 41, 59, 0.9))',
+          border: '1.5px solid #a855f7',
+          borderRadius: '10px',
+          padding: '7px 12px',
+          marginBottom: '8px',
+          boxShadow: '0 2px 10px rgba(168, 85, 247, 0.25)',
+          flexShrink: 0
+        }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            color: '#f3e8ff'
+          }}>
+            <span style={{ fontSize: '0.9rem' }}>👁️</span>
+            <span>[관전자 모드 - 연습 풀이 중]</span>
+          </span>
+          <span style={{
+            fontSize: '0.78rem',
+            color: '#cbd5e1',
+            fontWeight: 700
+          }}>
+            현재 생존자: <strong style={{ color: '#4ade80' }}>{gameState.survivors.length}명</strong>
+          </span>
+        </div>
+      )}
+
       {/* 상단: 타이머 및 라운드/상태 정보 */}
       <div style={{ flexShrink: 0, marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -754,136 +734,255 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         </div>
       </div>
 
-      {/* 중앙: 문제 텍스트 (줄바꿈 break-keep, 글자 크기 모바일 최적화 text-lg ~ text-xl) */}
+      {/* 중앙: 문제 텍스트 */}
       <div
         style={{
-          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           background: 'linear-gradient(180deg, #1e293b, #0f172a)',
-          borderRadius: '16px',
-          padding: '16px 14px',
+          borderRadius: '14px',
+          padding: '14px',
           border: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-          marginBottom: '10px',
-          minHeight: '100px',
-          maxHeight: '180px',
-          overflowY: 'auto'
+          marginBottom: '8px',
+          minHeight: '80px',
+          maxHeight: '140px',
+          overflowY: 'auto',
+          flexShrink: 0
         }}
       >
         <h2 style={{
-          fontSize: '1.18rem',
+          fontSize: '1.12rem',
           color: '#f8fafc',
-          lineHeight: 1.5,
+          lineHeight: 1.45,
           wordBreak: 'keep-all',
           textAlign: 'center',
           fontWeight: 800,
           margin: 0
         }}>
-          {roundInfo?.question || '문제를 로딩 중입니다...'}
+          {roundInfo?.question || roundResult?.question || '문제를 로딩 중입니다...'}
         </h2>
         {isSubmitted && gameState.status === 'IN_ROUND' && (
-          <div style={{ marginTop: '8px', color: '#38bdf8', fontSize: '0.85rem', fontWeight: 700 }}>
-            ✔ 답변 제출 완료! 대형 TV 화면을 주목해주세요.
+          <div style={{
+            marginTop: '6px',
+            color: player.isAlive ? '#38bdf8' : '#c084fc',
+            fontSize: '0.8rem',
+            fontWeight: 700
+          }}>
+            {player.isAlive
+              ? '✔ 답변 제출 완료! 대형 TV 화면을 주목해주세요.'
+              : '✔ 연습 답변 제출 완료! (공식 결과에 영향 없음)'}
           </div>
         )}
       </div>
 
-      {/* 하단: 4지선다 선택지 버튼 (터치 높이 최소 56px 이상, 가독성 확보) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px', flexShrink: 0 }}>
-        {roundInfo?.options.map((opt, idx) => {
-          const isSelected = selectedOption === idx;
-          let bg = '#1e293b';
-          let border = '2px solid transparent';
-          let color = '#f8fafc';
+      {/* 4지선다 선택지 버튼 */}
+      {hasOptions && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px', flexShrink: 0 }}>
+          {currentOptions.map((opt, idx) => {
+            const isSelected = selectedOption === idx;
+            let bg = '#1e293b';
+            let border = '2px solid transparent';
+            let color = '#f8fafc';
 
-          if (isSelected) {
-            bg = '#4f46e5';
-            border = '2px solid #a5b4fc';
-            color = 'white';
-          }
-
-          if (gameState.status === 'ROUND_RESULT' && roundResult) {
-            if (idx === roundResult.correctAnswerIndex) {
-              bg = '#15803d';
-              border = '2px solid #4ade80';
-              color = '#ffffff';
-            } else if (isSelected) {
-              bg = '#b91c1c';
-              border = '2px solid #f87171';
+            if (isSelected) {
+              bg = player.isAlive ? '#4f46e5' : '#7c3aed';
+              border = player.isAlive ? '2px solid #a5b4fc' : '2px solid #c084fc';
+              color = 'white';
             }
-          }
 
-          return (
-            <button
-              key={idx}
-              onClick={() => handleSelectOption(idx)}
-              disabled={isSubmitted || gameState.status !== 'IN_ROUND'}
-              style={{
-                background: bg,
-                border,
-                color,
-                padding: '12px 14px',
-                fontSize: '1.05rem',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                borderRadius: '12px',
-                minHeight: '56px',
-                touchAction: 'manipulation',
-                wordBreak: 'keep-all',
-                boxShadow: isSelected ? '0 4px 12px rgba(79, 70, 229, 0.4)' : 'none'
-              }}
-            >
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                background: isSelected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)',
-                marginRight: '10px',
-                fontWeight: 900,
-                fontSize: '0.9rem',
-                flexShrink: 0
-              }}>
-                {idx + 1}
-              </span>
-              <span style={{ flex: 1, wordBreak: 'keep-all', fontWeight: isSelected ? 800 : 600 }}>{opt}</span>
-              {gameState.status === 'ROUND_RESULT' && roundResult && (
-                <span style={{ marginLeft: '6px', fontSize: '1rem', flexShrink: 0 }}>
-                  {idx === roundResult.correctAnswerIndex ? '⭕' : isSelected ? '❌' : ''}
+            if (gameState.status === 'ROUND_RESULT' && roundResult) {
+              if (idx === roundResult.correctAnswerIndex) {
+                bg = '#15803d';
+                border = '2px solid #4ade80';
+                color = '#ffffff';
+              } else if (isSelected) {
+                bg = '#b91c1c';
+                border = '2px solid #f87171';
+              }
+            }
+
+            return (
+              <button
+                key={idx}
+                onClick={() => handleSelectOption(idx)}
+                disabled={isSubmitted || gameState.status !== 'IN_ROUND'}
+                style={{
+                  background: bg,
+                  border,
+                  color,
+                  padding: gameState.status === 'ROUND_RESULT' ? '8px 12px' : '10px 14px',
+                  fontSize: '0.98rem',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '10px',
+                  minHeight: gameState.status === 'ROUND_RESULT' ? '44px' : '52px',
+                  touchAction: 'manipulation',
+                  wordBreak: 'keep-all',
+                  boxShadow: isSelected ? '0 4px 12px rgba(79, 70, 229, 0.4)' : 'none'
+                }}
+              >
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  background: isSelected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)',
+                  marginRight: '10px',
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  flexShrink: 0
+                }}>
+                  {idx + 1}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 라운드 결과 해설 */}
-      {gameState.status === 'ROUND_RESULT' && roundResult && (
-        <div style={{
-          marginBottom: '8px',
-          padding: '10px 14px',
-          background: '#0f172a',
-          borderRadius: '12px',
-          textAlign: 'center',
-          border: '1px solid rgba(255,255,255,0.1)',
-          flexShrink: 0
-        }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: selectedOption === roundResult.correctAnswerIndex ? '#4ade80' : '#f87171' }}>
-            {selectedOption === roundResult.correctAnswerIndex ? '🎉 정답입니다! 다음 라운드 진출!' : '❌ 틀렸습니다! 탈락 처리됩니다.'}
-          </div>
-          {roundResult.explanation && (
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px', wordBreak: 'keep-all' }}>
-              💡 {roundResult.explanation}
-            </div>
-          )}
+                <span style={{ flex: 1, wordBreak: 'keep-all', fontWeight: isSelected ? 800 : 600 }}>{opt}</span>
+                {gameState.status === 'ROUND_RESULT' && roundResult && (
+                  <span style={{ marginLeft: '6px', fontSize: '1rem', flexShrink: 0 }}>
+                    {idx === roundResult.correctAnswerIndex ? '⭕' : isSelected ? '❌' : ''}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
+
+      {/* 🎯 라운드 결과 발표 상세 카드 섹션 */}
+      {gameState.status === 'ROUND_RESULT' && roundResult && (() => {
+        const correctIdx = roundResult.correctAnswerIndex;
+        const correctText = currentOptions[correctIdx] || '';
+        const hasSelected = selectedOption !== null && selectedOption !== undefined;
+        const isCorrect = hasSelected && selectedOption === correctIdx;
+        const mySelectedText = hasSelected ? (currentOptions[selectedOption] || '') : '';
+        const isSpectator = !player.isAlive;
+        const wasEliminatedThisRound = isSpectator && player.eliminatedRound === (roundResult.roundNumber || gameState.currentRound);
+
+        return (
+          <div style={{
+            marginBottom: '8px',
+            padding: '12px 14px',
+            background: 'linear-gradient(180deg, #0f172a, #1e1b4b)',
+            borderRadius: '14px',
+            border: isCorrect ? '2px solid #22c55e' : '2px solid #ef4444',
+            boxShadow: isCorrect ? '0 4px 18px rgba(34, 197, 94, 0.25)' : '0 4px 18px rgba(239, 68, 68, 0.25)',
+            flexShrink: 0,
+            overflow: 'hidden'
+          }}>
+            {/* 상단 판정 텍스트 배너 */}
+            <div style={{
+              fontSize: '1rem',
+              fontWeight: 900,
+              textAlign: 'center',
+              color: isCorrect ? '#4ade80' : '#f87171',
+              marginBottom: '10px'
+            }}>
+              {isSpectator ? (
+                wasEliminatedThisRound ? (
+                  '💥 오답으로 탈락했습니다! 다음 라운드부터 관전자 연습 모드로 참여합니다.'
+                ) : isCorrect ? (
+                  '🎉 [관전자 연습 풀이] 정답입니다!'
+                ) : hasSelected ? (
+                  '❌ [관전자 연습 풀이] 오답입니다!'
+                ) : (
+                  '⏰ [관전자 연습 풀이] 시간 초과 (미선택)'
+                )
+              ) : (
+                isCorrect ? (
+                  '🎉 정답입니다! 다음 라운드 진출!'
+                ) : hasSelected ? (
+                  '❌ 오답입니다! 탈락 처리됩니다.'
+                ) : (
+                  '⏰ 시간 초과! 탈락 처리됩니다.'
+                )
+              )}
+            </div>
+
+            {/* 카드 1: 내가 선택한 보기 */}
+            <div style={{
+              background: isCorrect ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              border: isCorrect ? '1.5px solid #22c55e' : '1.5px solid #ef4444',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              marginBottom: '8px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                color: isCorrect ? '#86efac' : '#fca5a5',
+                marginBottom: '3px'
+              }}>
+                <span>나의 선택: {hasSelected ? `[${selectedOption + 1}번]` : '[미제출]'}</span>
+                <span>{isCorrect ? '✅ 정답' : '❌ 오답'}</span>
+              </div>
+              <div style={{
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                color: '#f8fafc',
+                wordBreak: 'break-word',
+                lineHeight: 1.35
+              }}>
+                {hasSelected ? mySelectedText : '제한시간 내에 보기를 선택하지 못했습니다.'}
+              </div>
+            </div>
+
+            {/* 카드 2: 실제 정답 보기 (초록색 하이라이트 카드) */}
+            <div style={{
+              background: 'rgba(34, 197, 94, 0.22)',
+              border: '2px solid #22c55e',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              marginBottom: '8px',
+              boxShadow: '0 2px 10px rgba(34, 197, 94, 0.2)'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                color: '#86efac',
+                marginBottom: '3px'
+              }}>
+                <span>정답: [{correctIdx + 1}번]</span>
+                <span>⭐ 실제 정답</span>
+              </div>
+              <div style={{
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                color: '#4ade80',
+                wordBreak: 'break-word',
+                lineHeight: 1.35
+              }}>
+                {correctText}
+              </div>
+            </div>
+
+            {/* 카드 3: 정답 해설 */}
+            {roundResult.explanation && (
+              <div style={{
+                background: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '8px',
+                padding: '8px 10px',
+                fontSize: '0.8rem',
+                color: '#cbd5e1',
+                lineHeight: 1.4,
+                wordBreak: 'keep-all'
+              }}>
+                💡 <strong style={{ color: '#93c5fd' }}>해설:</strong> {roundResult.explanation}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 실시간 채팅창 컴포넌트 */}
       {renderChatBox()}
