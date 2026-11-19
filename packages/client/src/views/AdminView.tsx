@@ -308,40 +308,120 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   // 로그인 화면
   if (!isAuthenticated) {
     return (
-      <div style={{ maxWidth: '400px', margin: '80px auto', padding: '30px', background: '#1e293b', borderRadius: '16px', textAlign: 'center' }}>
-        <h2 style={{ color: '#818cf8', marginBottom: '16px' }}>🛠️ 관리자 대시보드 로그인</h2>
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <input
-            type="password"
-            placeholder="관리자 비밀번호 입력"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            style={{ padding: '12px', fontSize: '1rem' }}
-          />
-          {authError && <div style={{ color: '#f87171', fontSize: '0.9rem' }}>{authError}</div>}
-          <button type="submit" style={{ padding: '14px', background: '#6366f1', color: 'white', fontSize: '1.05rem' }}>
-            로그인
-          </button>
-        </form>
+      <div style={{
+        width: '100%',
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        boxSizing: 'border-box',
+        overflowX: 'hidden'
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '380px',
+          margin: '0 auto',
+          padding: '28px 20px',
+          background: '#1e293b',
+          borderRadius: '16px',
+          textAlign: 'center',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+          border: '1px solid #334155',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🛠️</div>
+          <h2 style={{ color: '#818cf8', fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px' }}>
+            관리자 대시보드 로그인
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>
+            CMB 150인 서바이벌 퀴즈 관리자 센터
+          </p>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+            <input
+              type="password"
+              placeholder="관리자 비밀번호 입력"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              style={{
+                width: '100%',
+                height: '48px',
+                minHeight: '48px',
+                padding: '0 14px',
+                fontSize: '1rem',
+                borderRadius: '10px',
+                border: '1px solid #475569',
+                background: '#0f172a',
+                color: 'white',
+                boxSizing: 'border-box'
+              }}
+            />
+            {authError && (
+              <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 600 }}>
+                {authError}
+              </div>
+            )}
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                height: '48px',
+                minHeight: '48px',
+                background: '#6366f1',
+                color: 'white',
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                borderRadius: '10px',
+                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                cursor: 'pointer',
+                border: 'none',
+                boxSizing: 'border-box'
+              }}
+            >
+              관리자 접속
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '16px 12px' : '24px 16px' }}>
+    <div style={{
+      width: '100%',
+      maxWidth: '1024px',
+      margin: '0 auto',
+      minHeight: '100vh',
+      padding: isMobile ? '12px 10px' : '24px 20px',
+      boxSizing: 'border-box',
+      overflowX: 'hidden'
+    }}>
       {/* 관리자 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '16px', flexDirection: isMobile ? 'column' : 'row', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', color: '#818cf8', fontWeight: 900 }}>🛠️ CMB 150인 서바이벌 퀴즈 관리자 센터</h1>
-          <p style={{ color: '#94a3b8', fontSize: isMobile ? '0.8rem' : '0.9rem', marginTop: '4px', lineHeight: 1.5 }}>
-            현장 서버 IP: <strong style={{ color: '#38bdf8' }}>{serverIp}:4000</strong>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        marginBottom: '20px',
+        borderBottom: '1px solid #334155',
+        paddingBottom: '16px',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: '12px',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ width: '100%' }}>
+          <h1 style={{ fontSize: isMobile ? '1.25rem' : '1.75rem', color: '#818cf8', fontWeight: 900, wordBreak: 'keep-all', lineHeight: 1.3 }}>
+            🛠️ CMB 150인 서바이벌 퀴즈 관리자 센터
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: isMobile ? '0.78rem' : '0.9rem', marginTop: '4px', lineHeight: 1.4, wordBreak: 'break-all' }}>
+            현장 IP: <strong style={{ color: '#38bdf8' }}>{serverIp}:4000</strong>
             {publicUrl && (
               <> | 공인 URL: <strong style={{ color: '#4ade80' }}>{publicUrl}</strong></>
             )}
             {' '}| 상태: <strong style={{ color: '#f59e0b' }}>{gameState.status}</strong>
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
           <button
             onClick={() => {
               setShowPwChangeModal(true);
@@ -351,22 +431,58 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               setNewPwInput('');
               setConfirmPwInput('');
             }}
-            style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 12px' : '10px 16px', background: '#475569', color: 'white', fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+            style={{
+              flex: isMobile ? '1 1 calc(50% - 4px)' : 'none',
+              minHeight: '44px',
+              padding: '8px 12px',
+              background: '#475569',
+              color: 'white',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              borderRadius: '8px',
+              cursor: 'pointer',
+              border: 'none',
+              boxSizing: 'border-box'
+            }}
           >
             🔒 비밀번호 변경
           </button>
           {persistedGameResult && (
             <button
               onClick={() => setShowSavedResultModal(true)}
-              style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 12px' : '10px 16px', background: '#3b82f6', color: 'white', fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
+              style={{
+                flex: isMobile ? '1 1 calc(50% - 4px)' : 'none',
+                minHeight: '44px',
+                padding: '8px 12px',
+                background: '#3b82f6',
+                color: 'white',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                border: 'none',
+                boxSizing: 'border-box'
+              }}
               title="리셋 전/직전에 완료된 경기의 최종 등수와 점수를 확인합니다"
             >
-              📜 직전 경기 등수 다시보기
+              📜 직전 등수 보기
             </button>
           )}
           <button
             onClick={handleDownloadExcel}
-            style={{ flex: isMobile ? '1 1 auto' : 'none', padding: isMobile ? '8px 14px' : '10px 18px', background: '#16a34a', color: 'white', fontSize: isMobile ? '0.85rem' : '0.95rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}
+            style={{
+              flex: isMobile ? '1 1 100%' : 'none',
+              minHeight: '44px',
+              padding: '8px 14px',
+              background: '#16a34a',
+              color: 'white',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              borderRadius: '8px',
+              cursor: 'pointer',
+              border: 'none',
+              boxSizing: 'border-box'
+            }}
           >
             📊 결과 엑셀 다운로드
           </button>
@@ -530,23 +646,23 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
       {showPwChangeModal && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0, 0, 0, 0.75)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+          background: 'rgba(0, 0, 0, 0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box'
         }}>
           <div style={{
             background: '#1e293b', border: '1px solid #475569', borderRadius: '16px',
-            maxWidth: '420px', width: '100%', padding: isMobile ? '18px 16px' : '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)'
+            maxWidth: '420px', width: '100%', padding: isMobile ? '18px 14px' : '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)', boxSizing: 'border-box'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: isMobile ? '1.15rem' : '1.25rem', color: '#f8fafc', fontWeight: 800 }}>🔒 관리자 비밀번호 변경</h3>
               <button
                 onClick={() => setShowPwChangeModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer', padding: '4px' }}
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
               <div>
                 <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '6px' }}>현재 비밀번호</label>
                 <input
@@ -554,7 +670,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                   value={currentPwInput}
                   onChange={(e) => setCurrentPwInput(e.target.value)}
                   placeholder="현재 관리자 비밀번호 입력"
-                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                  style={{ width: '100%', height: '46px', minHeight: '46px', padding: '0 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white', boxSizing: 'border-box' }}
                 />
               </div>
               <div>
@@ -564,7 +680,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                   value={newPwInput}
                   onChange={(e) => setNewPwInput(e.target.value)}
                   placeholder="새로운 비밀번호 입력"
-                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                  style={{ width: '100%', height: '46px', minHeight: '46px', padding: '0 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white', boxSizing: 'border-box' }}
                 />
               </div>
               <div>
@@ -574,7 +690,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                   value={confirmPwInput}
                   onChange={(e) => setConfirmPwInput(e.target.value)}
                   placeholder="새 비밀번호 다시 입력"
-                  style={{ width: '100%', padding: '10px 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                  style={{ width: '100%', height: '46px', minHeight: '46px', padding: '0 12px', fontSize: '0.95rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: 'white', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -592,14 +708,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button
                   type="submit"
-                  style={{ flex: 1, padding: '12px', background: '#6366f1', color: 'white', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                  style={{ flex: 1, height: '48px', minHeight: '48px', padding: '12px', background: '#6366f1', color: 'white', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
                 >
                   변경 저장
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPwChangeModal(false)}
-                  style={{ padding: '12px 18px', background: '#334155', color: '#cbd5e1', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                  style={{ height: '48px', minHeight: '48px', padding: '12px 18px', background: '#334155', color: '#cbd5e1', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
                 >
                   취소
                 </button>
@@ -614,69 +730,153 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         {/* 게임 제어 */}
         <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px' }}>
           <h3 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#f8fafc' }}>🎮 실시간 게임 제어</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '8px' }}>
             <button
               onClick={handleStartGame}
               disabled={gameState.status !== 'WAITING' && gameState.status !== 'GAME_OVER'}
-              style={{ gridColumn: isMobile ? 'span 2' : 'span 1', padding: '12px', background: '#4f46e5', color: 'white', fontWeight: 700 }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#4f46e5',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
             >
               🚀 게임 시작
             </button>
             <button
               onClick={handlePause}
               disabled={gameState.status !== 'IN_ROUND'}
-              style={{ padding: '12px', background: '#f59e0b', color: 'black', fontWeight: 700 }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#f59e0b',
+                color: 'black',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
             >
               ⏸️ 일시정지
             </button>
             <button
               onClick={handleResume}
               disabled={gameState.status !== 'PAUSED'}
-              style={{ padding: '12px', background: '#10b981', color: 'white', fontWeight: 700 }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#10b981',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
             >
               ▶️ 재개
             </button>
             <button
               onClick={handleSkip}
               disabled={gameState.status !== 'IN_ROUND'}
-              style={{ padding: '12px', background: '#64748b', color: 'white' }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#64748b',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
             >
-              문제 스킵
+              ⏭️ 문제 스킵
             </button>
             <button
               onClick={handleRandomQuiz}
               style={{
-                gridColumn: isMobile ? 'span 2' : 'span 1',
-                padding: '12px 14px',
+                minHeight: '48px',
+                padding: '10px 8px',
                 background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
                 color: 'white',
                 fontWeight: 800,
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)'
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
               }}
             >
-              🎲 랜덤 문제 출제
+              🎲 랜덤 문제
             </button>
             <button
               onClick={handleMoveToLobby}
               style={{
-                gridColumn: isMobile ? 'span 2' : 'span 1',
-                padding: '12px 14px',
+                minHeight: '48px',
+                padding: '10px 8px',
                 background: '#0284c7',
                 color: 'white',
-                fontWeight: 700
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
               }}
             >
-              🏠 전원 대기실 이동
+              🏠 전원 대기실
             </button>
             <button
               onClick={handleReset}
-              style={{ padding: '12px', background: '#e11d48', color: 'white', fontWeight: 700 }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#e11d48',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
             >
-              게임 리셋
+              🔄 게임 리셋
             </button>
             <button
               onClick={handleClearAllPlayers}
-              style={{ padding: '12px', background: '#b91c1c', color: 'white', fontWeight: 700 }}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#b91c1c',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
               title="대기 중인 모든 참가자를 퇴장시키고 인원을 0명으로 초기화합니다"
             >
               🧹 전원 퇴장 (0명)
@@ -685,20 +885,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
         </div>
 
         {/* 접속 QR코드 프리뷰 */}
-        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
           {qrCodeDataUrl && (
-            <img src={qrCodeDataUrl} alt="QR Code" style={{ width: '90px', height: '90px', borderRadius: '8px', flexShrink: 0 }} />
+            <img src={qrCodeDataUrl} alt="QR Code" style={{ width: '80px', height: '80px', borderRadius: '8px', flexShrink: 0 }} />
           )}
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#cbd5e1' }}>모바일 접속 QR코드</div>
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '4px 0 8px' }}>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '4px 0 8px' }}>
               참가자들에게 QR코드를 공유하세요.
             </p>
             {qrCodeDataUrl && (
               <a
                 href={qrCodeDataUrl}
                 download="quiz_join_qr.png"
-                style={{ color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'underline' }}
+                style={{ color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'underline', fontWeight: 600 }}
               >
                 QR 이미지 다운로드
               </a>
@@ -706,21 +906,32 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           </div>
         </div>
 
-        {/* 생존 통계 */}
+        {/* 실시간 참가자/생존자 통계 패널: 모바일 1열(grid-cols-1 sm:grid-cols-3) 세로 스택 */}
         <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px' }}>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#f8fafc' }}>📈 진행 통계</h3>
-          <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-            <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>총 참가자</div>
-              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#38bdf8' }}>{gameState.players.length}</div>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: '#f8fafc' }}>📈 실시간 현황 통계</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: isMobile ? '8px' : '16px',
+            textAlign: 'center'
+          }}>
+            <div style={{ background: '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #334155' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>총 참가자</div>
+              <div style={{ fontSize: isMobile ? '1.8rem' : '2rem', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>
+                {gameState.players.length}명
+              </div>
             </div>
-            <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>생존자</div>
-              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#4ade80' }}>{gameState.survivors.length}</div>
+            <div style={{ background: '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #334155' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>현재 생존자</div>
+              <div style={{ fontSize: isMobile ? '1.8rem' : '2rem', fontWeight: 900, color: '#4ade80', marginTop: '2px' }}>
+                {gameState.survivors.length}명
+              </div>
             </div>
-            <div>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>현재 라운드</div>
-              <div style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#f59e0b' }}>R{gameState.currentRound}</div>
+            <div style={{ background: '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #334155' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>진행 라운드</div>
+              <div style={{ fontSize: isMobile ? '1.8rem' : '2rem', fontWeight: 900, color: '#f59e0b', marginTop: '2px' }}>
+                R{gameState.currentRound}
+              </div>
             </div>
           </div>
         </div>
@@ -749,21 +960,21 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           <div style={{ display: 'flex', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
             <button
               onClick={handleSelectAllCategories}
-              style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', background: '#3730a3', color: '#e0e7ff', fontSize: '0.82rem', fontWeight: 700, borderRadius: '8px', border: '1px solid #6366f1', cursor: 'pointer' }}
+              style={{ flex: isMobile ? 1 : 'none', minHeight: '38px', padding: '8px 14px', background: '#3730a3', color: '#e0e7ff', fontSize: '0.82rem', fontWeight: 700, borderRadius: '8px', border: '1px solid #6366f1', cursor: 'pointer' }}
             >
               ✅ 전체 선택
             </button>
             <button
               onClick={handleDeselectAllCategories}
-              style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', background: '#0f172a', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, borderRadius: '8px', border: '1px solid #475569', cursor: 'pointer' }}
+              style={{ flex: isMobile ? 1 : 'none', minHeight: '38px', padding: '8px 14px', background: '#0f172a', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, borderRadius: '8px', border: '1px solid #475569', cursor: 'pointer' }}
             >
               초기화 (1개만)
             </button>
           </div>
         </div>
 
-        {/* 카테고리 체크박스 그리드 */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(210px, 1fr))', gap: isMobile ? '8px' : '12px' }}>
+        {/* 카테고리 체크박스 목록: flex flex-wrap gap-2 모바일 최적화 */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
           {ALL_QUIZ_CATEGORIES.map((cat) => {
             const isChecked = currentSelectedCategories.includes(cat);
             const count = quizzes.filter(q => q.category === cat && q.isApproved).length;
@@ -771,30 +982,33 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               <label
                 key={cat}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: isMobile ? '8px' : '12px',
-                  padding: isMobile ? '10px 10px' : '12px 14px',
-                  background: isChecked ? 'rgba(99, 102, 241, 0.22)' : '#0f172a',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  background: isChecked ? 'rgba(99, 102, 241, 0.25)' : '#0f172a',
                   border: isChecked ? '2px solid #818cf8' : '1px solid #334155',
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  flex: isMobile ? '1 1 calc(50% - 4px)' : 'none',
+                  minWidth: isMobile ? '135px' : 'auto',
+                  boxSizing: 'border-box',
                   userSelect: 'none',
-                  boxShadow: isChecked ? '0 4px 12px rgba(99, 102, 241, 0.2)' : 'none'
+                  transition: 'all 0.15s ease',
+                  boxShadow: isChecked ? '0 2px 8px rgba(99, 102, 241, 0.2)' : 'none'
                 }}
               >
                 <input
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => handleToggleCategory(cat)}
-                  style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer', flexShrink: 0 }}
                 />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: isMobile ? '0.88rem' : '0.95rem', fontWeight: isChecked ? 800 : 500, color: isChecked ? '#f8fafc' : '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: isChecked ? 800 : 500, color: isChecked ? '#f8fafc' : '#cbd5e1', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                     {cat}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: isChecked ? '#38bdf8' : '#64748b', marginTop: '2px', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.72rem', color: isChecked ? '#38bdf8' : '#64748b', marginTop: '1px' }}>
                     승인 {count}문제
                   </div>
                 </div>
@@ -884,11 +1098,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               placeholder="문제 제목"
               value={newQuiz.question}
               onChange={(e) => setNewQuiz({ ...newQuiz, question: e.target.value })}
+              style={{ minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
             />
             <select
               value={newQuiz.category}
               onChange={(e) => setNewQuiz({ ...newQuiz, category: e.target.value as QuizCategory })}
-              style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #475569' }}
+              style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #475569', minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
             >
               {ALL_QUIZ_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
@@ -899,6 +1114,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               placeholder="제한시간(초)"
               value={newQuiz.timeLimit}
               onChange={(e) => setNewQuiz({ ...newQuiz, timeLimit: Number(e.target.value) })}
+              style={{ minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -914,6 +1130,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                   opts[idx] = e.target.value;
                   setNewQuiz({ ...newQuiz, options: opts });
                 }}
+                style={{ minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
               />
             ))}
           </div>
@@ -922,7 +1139,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             <select
               value={newQuiz.answerIndex}
               onChange={(e) => setNewQuiz({ ...newQuiz, answerIndex: Number(e.target.value) })}
-              style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #475569' }}
+              style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '10px', border: '1px solid #475569', minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
             >
               <option value={0}>정답: 보기 1</option>
               <option value={1}>정답: 보기 2</option>
@@ -934,8 +1151,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               placeholder="정답 해설"
               value={newQuiz.explanation}
               onChange={(e) => setNewQuiz({ ...newQuiz, explanation: e.target.value })}
+              style={{ minHeight: '44px', width: '100%', boxSizing: 'border-box' }}
             />
-            <button type="submit" style={{ padding: '10px 24px', background: '#4f46e5', color: 'white' }}>
+            <button type="submit" style={{ padding: '10px 24px', minHeight: '44px', background: '#4f46e5', color: 'white', fontWeight: 700, borderRadius: '10px' }}>
               문제 등록
             </button>
           </div>
