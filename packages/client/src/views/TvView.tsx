@@ -1003,8 +1003,125 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             </h2>
           </div>
 
-          {/* 4지선다 보기 그리드 (문제 낭독 시 블러 처리 및 안내 오버레이) */}
+          {/* 4지선다 보기 그리드 (문제 낭독 시 블러 처리 / 마감 3초 전 대형 시계 연출) */}
           <div style={{ position: 'relative', marginBottom: '14px' }}>
+            {/* 4번 폴더 기반: 마감 3초 전 화면 중앙 초대형 시계 카운트다운 연출 */}
+            {gameState.status === 'IN_ROUND' && isUrgent && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 30,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(2, 6, 23, 0.88)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: '16px',
+                  border: '3px solid #ef4444',
+                  boxShadow: '0 0 60px rgba(239, 68, 68, 0.7), inset 0 0 40px rgba(239, 68, 68, 0.3)',
+                  animation: 'clockGlowPulse 0.8s infinite',
+                  padding: isMobile ? '16px' : '24px',
+                  pointerEvents: 'none'
+                }}
+              >
+                <div style={{
+                  fontSize: isMobile ? '1.05rem' : '1.5rem',
+                  fontWeight: 900,
+                  color: '#fca5a5',
+                  letterSpacing: '0.15em',
+                  marginBottom: isMobile ? '10px' : '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  animation: 'pulse 0.8s infinite'
+                }}>
+                  <span>⚠️</span>
+                  <span>제한시간 마감 3초 전! 즉시 선택하세요!</span>
+                  <span>⚠️</span>
+                </div>
+
+                {/* 대형 아날로그 시계 링 & 다이얼 */}
+                <div style={{ position: 'relative', width: isMobile ? '180px' : '260px', height: isMobile ? '180px' : '260px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width={isMobile ? 180 : 260} height={isMobile ? 180 : 260} className="countdown-ring" style={{ position: 'absolute', inset: 0 }}>
+                    {/* 시계 다이얼 외곽 배경 원 */}
+                    <circle
+                      cx={isMobile ? 90 : 130}
+                      cy={isMobile ? 90 : 130}
+                      r={isMobile ? 75 : 110}
+                      fill="rgba(15, 23, 42, 0.95)"
+                      stroke="rgba(255, 255, 255, 0.15)"
+                      strokeWidth={isMobile ? 10 : 14}
+                    />
+                    {/* 3초 게이지 프로그레스 링 */}
+                    <circle
+                      cx={isMobile ? 90 : 130}
+                      cy={isMobile ? 90 : 130}
+                      r={isMobile ? 75 : 110}
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth={isMobile ? 10 : 14}
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * (isMobile ? 75 : 110)}
+                      strokeDashoffset={(2 * Math.PI * (isMobile ? 75 : 110)) * (1 - secondsRemaining / 3)}
+                      style={{
+                        filter: 'drop-shadow(0 0 16px #ef4444)',
+                        transition: 'stroke-dashoffset 0.8s ease'
+                      }}
+                    />
+                  </svg>
+
+                  {/* 12개의 시계 눈금 마커 (아날로그 시계 페이스) */}
+                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+                    <div
+                      key={deg}
+                      style={{
+                        position: 'absolute',
+                        width: deg % 90 === 0 ? '4px' : '2px',
+                        height: deg % 90 === 0 ? (isMobile ? '10px' : '14px') : (isMobile ? '6px' : '8px'),
+                        background: deg % 90 === 0 ? '#ef4444' : 'rgba(255, 255, 255, 0.4)',
+                        transform: `rotate(${deg}deg) translateY(-${isMobile ? 64 : 96}px)`,
+                        transformOrigin: 'center center'
+                      }}
+                    />
+                  ))}
+
+                  {/* 중앙 초대형 카운트다운 숫자 (3, 2, 1) */}
+                  <div
+                    key={secondsRemaining}
+                    style={{
+                      fontSize: isMobile ? '4.8rem' : '7.5rem',
+                      fontWeight: 900,
+                      color: '#ffffff',
+                      textShadow: '0 0 35px #ef4444, 0 0 70px rgba(239, 68, 68, 0.8)',
+                      animation: 'clockTickBounce 0.5s ease-out',
+                      zIndex: 10,
+                      lineHeight: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'monospace, -apple-system, sans-serif'
+                    }}
+                  >
+                    {secondsRemaining}
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: isMobile ? '12px' : '16px',
+                  fontSize: isMobile ? '1.1rem' : '1.5rem',
+                  fontWeight: 900,
+                  color: '#f87171',
+                  textShadow: '0 0 20px rgba(239, 68, 68, 0.8)',
+                  animation: 'shake 0.4s infinite',
+                  letterSpacing: '0.05em'
+                }}>
+                  ⏰ 째깍- 째깍- 미제출 시 즉시 탈락! ⏰
+                </div>
+              </div>
+            )}
+
             {gameState.status === 'QUESTION_READING' && (
               <div style={{
                 position: 'absolute',
@@ -1035,7 +1152,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                 gap: isMobile ? '10px' : '16px',
-                filter: gameState.status === 'QUESTION_READING' ? 'blur(8px)' : 'none',
+                filter: isUrgent ? 'blur(4px)' : (gameState.status === 'QUESTION_READING' ? 'blur(8px)' : 'none'),
                 opacity: gameState.status === 'QUESTION_READING' ? 0.45 : 1,
                 pointerEvents: gameState.status === 'QUESTION_READING' ? 'none' : 'auto',
                 transition: 'all 0.4s ease',

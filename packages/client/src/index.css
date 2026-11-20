@@ -131,3 +131,45 @@ input:focus, select:focus {
     transform: translateY(0) scale(1);
   }
 }
+
+/* ===== 4번 폴더 Countdown Ring & Big Clock Animations ===== */
+.countdown-ring {
+  transform: rotate(-90deg);
+}
+
+.countdown-ring circle {
+  transition: stroke-dashoffset 0.8s linear;
+}
+
+@keyframes countdownUrgent {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes clockTickBounce {
+  0% {
+    transform: scale(1.4);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes clockGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 70px rgba(239, 68, 68, 0.9), inset 0 0 40px rgba(239, 68, 68, 0.6);
+  }
+}
