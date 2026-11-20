@@ -9,6 +9,32 @@ interface TvViewProps {
   gameState: GameState;
 }
 
+// 자연스러운 고품질 한국어 뉴럴 보이스 우선 탐색 함수
+const getBestKoreanVoice = (): SpeechSynthesisVoice | null => {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+  const allVoices = window.speechSynthesis.getVoices();
+  if (!allVoices || allVoices.length === 0) return null;
+
+  // 1. 한국어 보이스 필터링 (ko-KR, ko_kr, ko)
+  const koreanVoices = allVoices.filter(v => {
+    const lang = (v.lang || '').toLowerCase();
+    return lang === 'ko-kr' || lang === 'ko_kr' || lang.startsWith('ko');
+  });
+
+  if (koreanVoices.length === 0) return null;
+
+  // 2. 우선순위 키워드 탐색: 'natural', 'online', 'google', 'neural', 'yuna', 'sunhi'
+  const priorityKeywords = ['natural', 'online', 'google', 'neural', 'yuna', 'sunhi'];
+
+  for (const keyword of priorityKeywords) {
+    const matched = koreanVoices.find(v => (v.name || '').toLowerCase().includes(keyword));
+    if (matched) return matched;
+  }
+
+  // 3. 없으면 기본 한국어 보이스 또는 첫 번째 한국어 보이스
+  return koreanVoices.find(v => v.default) || koreanVoices[0];
+};
+
 export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
 
@@ -30,6 +56,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [answeredCount, setAnsweredCount] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true); // TV Web Speech API (TTS) 낭독 활성화
+  const [voicesLoaded, setVoicesLoaded] = useState(false); // 브라우저 비동기 음성 목록 로딩 완료 여부
 
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -175,15 +202,43 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   }, [gameState.status]);
 
-  // 1단계: Web Speech API (TTS) 한국어 문제 사전 낭독
+  // 브라우저 Web Speech API 음성(Voice) 목록 비동기 로딩 감지
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const handleVoicesChanged = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        setVoicesLoaded(true);
+      }
+    };
+
+    handleVoicesChanged();
+    window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
+  // 1단계: Web Speech API (TTS) 한국어 문제 사전 낭독 (자연스러운 뉴럴 보이스 및 톤 적용)
   useEffect(() => {
     if (gameState.status === 'QUESTION_READING' && roundInfo) {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window && ttsEnabled) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(roundInfo.question);
         utterance.lang = 'ko-KR';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.rate = 0.95; // 기계음처럼 너무 빠르지 않고 또박또박 전달되도록 약간 감속
+        utterance.pitch = 1.05; // 약간 밝고 명료한 퀴즈쇼 진행 톤
+
+        // 자연스러운 고품질 한국어 뉴럴 보이스 자동 탐색 및 할당
+        const bestVoice = getBestKoreanVoice();
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+          console.log(`[TV TTS] 고품질 보이스 할당: ${bestVoice.name} (${bestVoice.lang})`);
+        }
 
         let hasOpened = false;
         const triggerOpenOptions = () => {
@@ -228,7 +283,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         window.speechSynthesis.cancel();
       }
     }
-  }, [gameState.status, roundInfo?.quizId, ttsEnabled]);
+  }, [gameState.status, roundInfo?.quizId, ttsEnabled, voicesLoaded]);
 
   // 실시간 타이머 계산 및 종료 3초 전 긴박한 사운드/0초 타임오버 버저
   const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
@@ -695,55 +750,94 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       {/* 4. 라운드 진행 중 (문제 낭독, 타이머 카운트다운, 4개 보기) */}
       {(gameState.status === 'QUESTION_READING' || gameState.status === 'IN_ROUND' || gameState.status === 'ROUND_RESULT') && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* 중앙 초대형 카운트다운 타이머 & 답변 제출 현황 게이지 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontSize: isMobile ? '0.95rem' : '1.2rem', color: '#94a3b8' }}>
-              {gameState.status === 'QUESTION_READING' ? (
-                <span style={{ color: '#facc15', fontWeight: 800 }}>🎙️ 문제 낭독 중입니다...</span>
-              ) : (
-                <>실시간 답변 제출: <strong style={{ color: '#38bdf8' }}>{answeredCount}</strong> / {survivors.length}명</>
-              )}
+          {/* 좌측 2/3 메인 영역 내부 상단: 타이머 및 낭독 중 상태 전용 헤더 바 (채팅 사이드바와 완전 분리) */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '14px',
+              padding: isMobile ? '8px 12px' : '10px 20px',
+              background: 'rgba(15, 23, 42, 0.75)',
+              border: isUrgent ? '2px solid #ef4444' : gameState.status === 'QUESTION_READING' ? '1.5px solid rgba(251, 191, 36, 0.6)' : '1px solid #334155',
+              borderRadius: '16px',
+              boxShadow: isUrgent ? '0 0 30px rgba(239, 68, 68, 0.4)' : '0 4px 16px rgba(0, 0, 0, 0.3)',
+              boxSizing: 'border-box',
+              gap: '12px',
+              width: '100%'
+            }}
+          >
+            {/* 좌측: 실시간 답변 제출 현황 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ fontSize: isMobile ? '0.9rem' : '1.15rem', color: '#94a3b8', fontWeight: 700 }}>
+                {gameState.status === 'QUESTION_READING' ? (
+                  <span style={{ color: '#facc15', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🎙️</span>
+                    <span>문제 사전 낭독 진행 중</span>
+                  </span>
+                ) : (
+                  <>
+                    📊 실시간 답변 제출:{' '}
+                    <strong style={{ color: '#38bdf8', fontSize: isMobile ? '1.15rem' : '1.35rem' }}>
+                      {answeredCount}
+                    </strong>{' '}
+                    / {survivors.length}명
+                  </>
+                )}
+              </div>
             </div>
 
-            {gameState.status === 'QUESTION_READING' && (
-              <div
-                style={{
-                  fontSize: isMobile ? '1.4rem' : '2.2rem',
-                  fontWeight: 900,
-                  color: '#fbbf24',
-                  textShadow: '0 0 20px rgba(251, 191, 36, 0.6)',
-                  animation: 'pulse 1.2s infinite',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span>🎙️</span>
-                <span>문제 낭독 중</span>
-              </div>
-            )}
+            {/* 우측/중앙: 타이머 또는 낭독 중 상태 뱃지 (채팅 사이드바와 겹치지 않는 독립 컨테이너) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {gameState.status === 'QUESTION_READING' && (
+                <div
+                  style={{
+                    background: 'rgba(251, 191, 36, 0.2)',
+                    border: '1.5px solid #fbbf24',
+                    borderRadius: '9999px',
+                    padding: isMobile ? '6px 14px' : '8px 24px',
+                    fontSize: isMobile ? '1rem' : '1.35rem',
+                    fontWeight: 900,
+                    color: '#fbbf24',
+                    textShadow: '0 0 15px rgba(251, 191, 36, 0.6)',
+                    animation: 'pulse 1.2s infinite',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>🎙️</span>
+                  <span>문제 사전 낭독 중 (보기 준비)</span>
+                </div>
+              )}
 
-            {gameState.status === 'IN_ROUND' && (
-              <div
-                style={{
-                  fontSize: isMobile ? '2.2rem' : '4rem',
-                  fontWeight: 900,
-                  color: isUrgent ? '#ef4444' : '#38bdf8',
-                  textShadow: isUrgent ? '0 0 35px #ef4444, 0 0 70px #ef4444' : '0 0 20px #38bdf8',
-                  animation: isUrgent ? 'heartbeat 0.6s infinite' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {isUrgent ? (
-                  <span style={{ display: 'inline-block', animation: 'shake 0.3s infinite' }}>⏰</span>
-                ) : (
-                  <span>⏳</span>
-                )}
-                <span>{secondsRemaining}초</span>
-              </div>
-            )}
+              {gameState.status === 'IN_ROUND' && (
+                <div
+                  style={{
+                    background: isUrgent ? 'rgba(239, 68, 68, 0.25)' : 'rgba(30, 41, 59, 0.95)',
+                    border: isUrgent ? '2px solid #ef4444' : '2px solid #38bdf8',
+                    borderRadius: '9999px',
+                    padding: isMobile ? '4px 14px' : '6px 24px',
+                    fontSize: isMobile ? '1.6rem' : '2.6rem',
+                    fontWeight: 900,
+                    color: isUrgent ? '#ef4444' : '#38bdf8',
+                    textShadow: isUrgent ? '0 0 25px #ef4444, 0 0 50px #ef4444' : '0 0 20px rgba(56, 189, 248, 0.8)',
+                    animation: isUrgent ? 'heartbeat 0.6s infinite' : 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  {isUrgent ? (
+                    <span style={{ display: 'inline-block', animation: 'shake 0.3s infinite' }}>⏰</span>
+                  ) : (
+                    <span>⏳</span>
+                  )}
+                  <span>{secondsRemaining}초</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 메인 문제 박스 */}
