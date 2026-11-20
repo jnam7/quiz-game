@@ -884,6 +884,11 @@ export class GameEngine {
     this.syncState();
   }
 
+  public setQrMode(mode: 'WIFI' | 'EXTERNAL'): void {
+    this.settings.qrMode = mode;
+    this.syncState();
+  }
+
   public getSurvivors(): Player[] {
     return Array.from(this.players.values()).filter(p => p.isAlive);
   }

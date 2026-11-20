@@ -108,6 +108,39 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   });
 
   const [publicUrl, setPublicUrl] = useState('');
+  const [serverInfo, setServerInfo] = useState<{ localIp: string; clientPort: number; serverPort: number; publicUrl?: string | null } | null>(null);
+  const [qrSession, setQrSession] = useState<string>('');
+
+  const currentQrMode = gameState.settings.qrMode || 'EXTERNAL';
+
+  const handleQrModeChange = (mode: 'WIFI' | 'EXTERNAL') => {
+    socket.emit('admin:change_qr_mode', { mode });
+  };
+
+  const getQrTargetUrl = (mode: 'WIFI' | 'EXTERNAL') => {
+    let target = '';
+    if (mode === 'WIFI') {
+      const ip = serverInfo?.localIp || serverIp || 'localhost';
+      const port = serverInfo?.clientPort || 3000;
+      target = `http://${ip}:${port}`;
+    } else {
+      target = serverInfo?.publicUrl || publicUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+    }
+    if (qrSession) {
+      target += (target.includes('?') ? '&' : '?') + `session=${qrSession}`;
+    }
+    return target;
+  };
+
+  const activeQrUrl = getQrTargetUrl(currentQrMode);
+
+  useEffect(() => {
+    if (activeQrUrl) {
+      QRCode.toDataURL(activeQrUrl, { width: 320, margin: 1 })
+        .then(url => setQrCodeDataUrl(url))
+        .catch(console.error);
+    }
+  }, [activeQrUrl]);
 
   const loadQuizzes = () => {
     fetch('/api/quizzes')
@@ -121,12 +154,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
       fetch('/api/server-info')
         .then(res => res.json())
         .then(info => {
+          setServerInfo(info);
           setServerIp(info.localIp);
           if (info.publicUrl) setPublicUrl(info.publicUrl);
-          const targetUrl = info.publicUrl || `http://${info.localIp}:${info.clientPort}`;
-          QRCode.toDataURL(targetUrl, { width: 240, margin: 1 })
-            .then(url => setQrCodeDataUrl(url));
-        });
+        })
+        .catch(console.error);
     };
 
     fetchInfo();
@@ -135,14 +167,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
     const handleTunnelUpdated = (newPublicUrl: string) => {
       setPublicUrl(newPublicUrl);
-      QRCode.toDataURL(newPublicUrl, { width: 240, margin: 1 })
-        .then(url => setQrCodeDataUrl(url));
     };
+    const handleQrUpdated = (data: { sessionToken: string; timestamp: number }) => {
+      setQrSession(data.sessionToken);
+    };
+
     socket.on('server:tunnel_updated', handleTunnelUpdated);
+    socket.on('game:qr_updated', handleQrUpdated);
 
     return () => {
       clearTimeout(t);
       socket.off('server:tunnel_updated', handleTunnelUpdated);
+      socket.off('game:qr_updated', handleQrUpdated);
     };
   }, []);
 
@@ -1021,25 +1057,148 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           </div>
         </div>
 
-        {/* 접속 QR코드 프리뷰 */}
-        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {qrCodeDataUrl && (
-            <img src={qrCodeDataUrl} alt="QR Code" style={{ width: '80px', height: '80px', borderRadius: '8px', flexShrink: 0 }} />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#cbd5e1' }}>모바일 접속 QR코드</div>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '4px 0 8px' }}>
-              참가자들에게 QR코드를 공유하세요.
-            </p>
-            {qrCodeDataUrl && (
-              <a
-                href={qrCodeDataUrl}
-                download="quiz_join_qr.png"
-                style={{ color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'underline', fontWeight: 600 }}
+        {/* 접속 QR코드 모드 선택, 프리뷰 및 다운로드 */}
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#f8fafc' }}>📱 모바일 접속 QR 코드 관리 및 다운로드</div>
+              <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '2px 0 0' }}>
+                행사장 네트워크 환경에 맞는 QR 코드를 선택하세요. (TV 전광판과 실시간 동기화)
+              </p>
+            </div>
+
+            {/* 탭 / 세그먼트 버튼: 사내 Wi-Fi vs 외부 접속(LTE/5G) */}
+            <div style={{ display: 'inline-flex', background: '#0f172a', padding: '4px', borderRadius: '12px', border: '1px solid #334155', gap: '4px' }}>
+              <button
+                type="button"
+                onClick={() => handleQrModeChange('WIFI')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: isMobile ? '0.82rem' : '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: currentQrMode === 'WIFI' ? '#4f46e5' : 'transparent',
+                  color: currentQrMode === 'WIFI' ? '#ffffff' : '#94a3b8',
+                  border: currentQrMode === 'WIFI' ? '1px solid #818cf8' : '1px solid transparent',
+                  boxShadow: currentQrMode === 'WIFI' ? '0 2px 8px rgba(79, 70, 229, 0.4)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                QR 이미지 다운로드
-              </a>
+                📶 사내 Wi-Fi용 QR
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQrModeChange('EXTERNAL')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: isMobile ? '0.82rem' : '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: currentQrMode === 'EXTERNAL' ? '#4f46e5' : 'transparent',
+                  color: currentQrMode === 'EXTERNAL' ? '#ffffff' : '#94a3b8',
+                  border: currentQrMode === 'EXTERNAL' ? '1px solid #818cf8' : '1px solid transparent',
+                  boxShadow: currentQrMode === 'EXTERNAL' ? '0 2px 8px rgba(79, 70, 229, 0.4)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                🌐 외부 접속용 QR (LTE/5G)
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: '16px', background: '#0f172a', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
+            {qrCodeDataUrl ? (
+              <img src={qrCodeDataUrl} alt="QR Code Preview" style={{ width: '100px', height: '100px', borderRadius: '10px', background: '#ffffff', padding: '6px', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: '100px', height: '100px', borderRadius: '10px', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                ⏳
+              </div>
             )}
+            <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  background: currentQrMode === 'WIFI' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                  color: currentQrMode === 'WIFI' ? '#4ade80' : '#38bdf8',
+                  border: `1px solid ${currentQrMode === 'WIFI' ? '#22c55e' : '#0284c7'}`
+                }}>
+                  {currentQrMode === 'WIFI' ? '📶 사내 Wi-Fi 모드' : '🌐 LTE / 5G 외부 모드'}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>선택된 접속 주소:</span>
+              </div>
+
+              <div style={{
+                fontSize: isMobile ? '0.82rem' : '0.95rem',
+                color: '#38bdf8',
+                fontWeight: 'bold',
+                wordBreak: 'break-all',
+                background: 'rgba(30, 41, 59, 0.7)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                marginBottom: '10px'
+              }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeQrUrl}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeQrUrl);
+                    alert('접속 URL이 클립보드에 복사되었습니다:\n' + activeQrUrl);
+                  }}
+                  style={{
+                    background: '#334155',
+                    border: 'none',
+                    color: '#f8fafc',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                  title="접속 URL 복사"
+                >
+                  📋 복사
+                </button>
+              </div>
+
+              {/* QR 이미지 다운로드 버튼 */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {qrCodeDataUrl && (
+                  <a
+                    href={qrCodeDataUrl}
+                    download={currentQrMode === 'WIFI' ? 'quiz-qr-internal-wifi.png' : 'quiz-qr-external-lte.png'}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: currentQrMode === 'WIFI' ? '#16a34a' : '#0284c7',
+                      color: '#ffffff',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      textDecoration: 'none',
+                      fontWeight: 700,
+                      boxShadow: currentQrMode === 'WIFI' ? '0 2px 8px rgba(22, 163, 74, 0.4)' : '0 2px 8px rgba(2, 132, 199, 0.4)'
+                    }}
+                  >
+                    <span>📥</span>
+                    <span>QR 코드 다운로드 ({currentQrMode === 'WIFI' ? '사내 Wi-Fi용' : '외부 접속용'})</span>
+                  </a>
+                )}
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                  저장 파일명: <strong style={{ color: '#e2e8f0' }}>{currentQrMode === 'WIFI' ? 'quiz-qr-internal-wifi.png' : 'quiz-qr-external-lte.png'}</strong>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

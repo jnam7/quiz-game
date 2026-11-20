@@ -272,6 +272,19 @@ export function setupSocketHandlers(
       }
     });
 
+    // 4-3. 관리자 대기실 QR 모드 변경 요청 (사내 Wi-Fi vs 외부 공인/LTE)
+    socket.on('admin:change_qr_mode', (data, callback) => {
+      try {
+        const mode = data?.mode === 'WIFI' ? 'WIFI' : 'EXTERNAL';
+        gameEngine.setQrMode(mode);
+        console.log(`[Admin] Lobby QR mode changed to: ${mode}`);
+        if (callback) callback({ success: true, mode });
+      } catch (err) {
+        console.error('[admin:change_qr_mode Error]:', err);
+        if (callback) callback({ success: false, mode: 'EXTERNAL' });
+      }
+    });
+
     socket.on('admin:chat_clear', (callback) => {
       try {
         gameEngine.clearChatHistory();

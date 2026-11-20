@@ -51,7 +51,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [joinUrlText, setJoinUrlText] = useState<string>('');
-  const [connectionMode, setConnectionMode] = useState<'public' | 'wifi'>('public');
+  const qrMode = gameState.settings.qrMode || 'EXTERNAL';
   const [serverInfo, setServerInfo] = useState<{ publicUrl?: string; localIp: string; clientPort: number } | null>(null);
   const [answeredCount, setAnsweredCount] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -119,9 +119,12 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         .then(res => res.json())
         .then(info => {
           setServerInfo(info);
-          let targetUrl = (connectionMode === 'public' && info.publicUrl)
-            ? info.publicUrl
-            : `http://${info.localIp}:${info.clientPort}`;
+          let targetUrl = '';
+          if (qrMode === 'WIFI') {
+            targetUrl = `http://${info.localIp}:${info.clientPort}`;
+          } else {
+            targetUrl = info.publicUrl || window.location.origin;
+          }
 
           if (qrSession) {
             targetUrl += (targetUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
@@ -150,7 +153,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [connectionMode, qrSession]);
+  }, [qrMode, qrSession]);
 
   // 소켓 이벤트
   useEffect(() => {
@@ -201,9 +204,13 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     };
 
     const handleTunnelUpdated = (newPublicUrl: string) => {
-      if (connectionMode === 'public' && newPublicUrl) {
-        setJoinUrlText(newPublicUrl);
-        QRCode.toDataURL(newPublicUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
+      if (qrMode === 'EXTERNAL' && newPublicUrl) {
+        let targetUrl = newPublicUrl;
+        if (qrSession) {
+          targetUrl += (targetUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+        }
+        setJoinUrlText(targetUrl);
+        QRCode.toDataURL(targetUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
           .then(url => setQrCodeUrl(url))
           .catch(err => console.error(err));
       }
@@ -787,34 +794,27 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             스마트폰 카메라로 아래 QR코드를 스캔하여 지금 즉시 접속하세요!
           </p>
 
-          {/* 접속 모드 전환 탭 버튼 */}
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '8px', marginBottom: isMobile ? '16px' : '20px', width: isMobile ? '100%' : 'auto' }}>
-            <button
-              onClick={() => setConnectionMode('public')}
+          {/* 접속 모드 안내 뱃지 (관리자 설정과 실시간 연동) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isMobile ? '16px' : '20px' }}>
+            <div
               style={{
-                padding: isMobile ? '8px 14px' : '10px 20px',
-                background: connectionMode === 'public' ? '#4f46e5' : '#1e293b',
-                color: 'white',
-                border: connectionMode === 'public' ? '2px solid #a5b4fc' : '1px solid #475569',
-                fontSize: isMobile ? '0.85rem' : '1rem',
-                borderRadius: '12px'
+                padding: isMobile ? '8px 16px' : '10px 24px',
+                background: qrMode === 'WIFI' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(79, 70, 229, 0.25)',
+                color: qrMode === 'WIFI' ? '#4ade80' : '#a5b4fc',
+                border: qrMode === 'WIFI' ? '2px solid #22c55e' : '2px solid #818cf8',
+                fontSize: isMobile ? '0.9rem' : '1.15rem',
+                fontWeight: 800,
+                borderRadius: '9999px',
+                boxShadow: qrMode === 'WIFI' ? '0 0 20px rgba(34, 197, 94, 0.4)' : '0 0 20px rgba(99, 102, 241, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                animation: 'pulse 1.5s infinite'
               }}
             >
-              🌐 외부 접속 모드 (LTE / 5G / 모든 네트워크)
-            </button>
-            <button
-              onClick={() => setConnectionMode('wifi')}
-              style={{
-                padding: isMobile ? '8px 14px' : '10px 20px',
-                background: connectionMode === 'wifi' ? '#4f46e5' : '#1e293b',
-                color: 'white',
-                border: connectionMode === 'wifi' ? '2px solid #a5b4fc' : '1px solid #475569',
-                fontSize: isMobile ? '0.85rem' : '1rem',
-                borderRadius: '12px'
-              }}
-            >
-              📶 사내 Wi-Fi 직접 접속 모드 (초고속)
-            </button>
+              <span>{qrMode === 'WIFI' ? '📶' : '🌐'}</span>
+              <span>{qrMode === 'WIFI' ? '사내 Wi-Fi 접속 모드 (초고속 사내망)' : 'LTE / 5G 외부 접속 모드 (모든 네트워크)'}</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '20px' : '50px', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
@@ -845,7 +845,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                 </div>
                 {joinUrlText && (
                   <div style={{ fontSize: isMobile ? '0.82rem' : '0.95rem', color: '#38bdf8', fontWeight: 'bold', wordBreak: 'break-all', maxWidth: isMobile ? '240px' : '300px', margin: '0 auto' }}>
-                    🌐 {joinUrlText}
+                    {qrMode === 'WIFI' ? '📶 ' : '🌐 '}{joinUrlText}
                   </div>
                 )}
               </div>
