@@ -69,7 +69,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
 
   // 문제 풀이 BGM (/bgm.mp4) 오디오 제어
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [bgmVolume, setBgmVolume] = useState<number>(0.5); // 0.0 ~ 1.0 (기본 50%)
+  const [bgmVolume, setBgmVolume] = useState<number>(1.0); // 0.0 ~ 1.0 (기본 100% / 1.0)
   const [bgmMuted, setBgmMuted] = useState<boolean>(false);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     if (gameState.status === 'IN_ROUND') {
       if (bgmAudioRef.current) {
         bgmAudioRef.current.currentTime = 0;
-        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume; // 다음 문제로 넘어가 재생될 때는 원래 볼륨(1.0)으로 복구
         bgmAudioRef.current.muted = bgmMuted;
         const playPromise = bgmAudioRef.current.play();
         if (playPromise !== undefined) {
@@ -97,9 +97,10 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       if (bgmAudioRef.current) {
         bgmAudioRef.current.pause();
         bgmAudioRef.current.currentTime = 0;
+        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
       }
     }
-  }, [gameState.status]);
+  }, [gameState.status, bgmVolume, bgmMuted]);
 
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -342,7 +343,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   }, [gameState.status, roundInfo?.quizId, ttsEnabled, voicesLoaded]);
 
-  // 실시간 타이머 계산 및 종료 3초 전 긴박한 사운드/0초 타임오버 버저
+  // 실시간 타이머 계산 및 종료 3초 전 BGM 자동 감쇄(Ducking) / 고출력 아날로그 초침 / 0초 타임오버 버저
   const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
   const lastTickSecondRef = useRef<number | null>(null);
 
@@ -351,11 +352,29 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       const interval = setInterval(() => {
         const remaining = Math.max(0, Math.ceil((roundInfo.serverEndTime - Date.now()) / 1000));
         setSecondsRemaining(remaining);
+
+        // 1. 3초 전 BGM 자동 볼륨 감쇄 (Audio Ducking: 25% 수준으로 즉시 감쇄)
+        if (remaining <= 3 && remaining > 0) {
+          if (bgmAudioRef.current && !bgmMuted) {
+            bgmAudioRef.current.volume = Math.min(bgmVolume * 0.25, 0.25);
+          }
+        } else if (remaining > 3) {
+          if (bgmAudioRef.current && !bgmMuted) {
+            bgmAudioRef.current.volume = bgmVolume;
+          }
+        }
+
+        // 2. 3, 2, 1초 고출력 아날로그 시계 초침(Tick-Tock) 및 0초 타임오버 마감 경고음
         if (lastTickSecondRef.current !== remaining) {
           lastTickSecondRef.current = remaining;
           if (remaining <= 3 && remaining > 0) {
             soundEngine.play('COUNTDOWN_URGENT');
           } else if (remaining === 0) {
+            if (bgmAudioRef.current) {
+              bgmAudioRef.current.pause();
+              bgmAudioRef.current.currentTime = 0;
+              bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+            }
             soundEngine.play('TIMEOUT');
           }
         }
@@ -364,7 +383,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     } else {
       lastTickSecondRef.current = null;
     }
-  }, [gameState.status, roundInfo]);
+  }, [gameState.status, roundInfo, bgmVolume, bgmMuted]);
 
   const toggleSound = () => {
     soundEngine.enable();
