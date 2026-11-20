@@ -39,6 +39,12 @@ class SoundEngine {
         this.playTone(1200, 0.08, 'triangle', 0.15);
         break;
 
+      case 'TIMEOUT':
+        // 저음 버저 경고음 (220Hz -> 180Hz)
+        this.playTone(220, 0.5, 'sawtooth', 0.25);
+        setTimeout(() => this.playTone(180, 0.6, 'sawtooth', 0.25), 100);
+        break;
+
       case 'CORRECT':
         // 밝은 메이저 코드
         this.playChord([523.25, 659.25, 783.99], 0.3, 'sine', 0.15);

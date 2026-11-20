@@ -41,12 +41,13 @@ export interface Player {
 }
 
 export type GameStatus =
-  | 'WAITING'       // 참가자 입장 대기 (QR코드 및 대기실)
-  | 'STARTING'      // 카운트다운 (3, 2, 1)
-  | 'IN_ROUND'      // 문제 출제 및 타이머 진행 중
-  | 'ROUND_RESULT'  // 정답 공개 및 탈락자 처리 연출
-  | 'PAUSED'        // 관리자 일시정지
-  | 'GAME_OVER';    // 최종 우승자 발표 및 종료
+  | 'WAITING'           // 참가자 입장 대기 (QR코드 및 대기실)
+  | 'STARTING'          // 카운트다운 (3, 2, 1)
+  | 'QUESTION_READING'  // 문제 사전 낭독 중 (보기 비활성화/블러)
+  | 'IN_ROUND'          // 보기 오픈 및 문제 풀이 제한시간 진행 중
+  | 'ROUND_RESULT'      // 정답 공개 및 탈락자 처리 연출
+  | 'PAUSED'            // 관리자 일시정지
+  | 'GAME_OVER';        // 최종 우승자 발표 및 종료
 
 export interface RoundInfo {
   roundNumber: number;
@@ -59,6 +60,7 @@ export interface RoundInfo {
   timeLimit: number;
   serverStartTime: number; // 서버 기준 시작 시각(ms)
   serverEndTime: number;   // 서버 기준 마감 시각(ms)
+  isReading?: boolean;     // 문제 낭독 단계 여부
 }
 
 export interface RoundResult {
@@ -144,6 +146,7 @@ export interface ClientToServerEvents {
     data: { token?: string },
     callback?: (res: { success: boolean }) => void
   ) => void; // 참가자 뒤로가기/창닫기 시 퇴장 요청
+  'round:open_options': () => void; // TV TTS 낭독 완료 또는 타이머로 보기 오픈 요청
 
   // 관리자
   'admin:auth': (password: string, callback: (res: { success: boolean }) => void) => void;
@@ -155,6 +158,7 @@ export interface ClientToServerEvents {
   'admin:pause_game': () => void;
   'admin:resume_game': () => void;
   'admin:skip_round': () => void;
+  'admin:skip_reading': () => void; // 문제 낭독 즉시 스킵 후 보기 오픈
   'admin:random_quiz': () => void;
   'admin:kick_player': (token: string) => void;
   'admin:update_timer': (seconds: number) => void;
@@ -173,6 +177,7 @@ export interface ClientToServerEvents {
 export type SoundEffectType =
   | 'COUNTDOWN_TICK'
   | 'COUNTDOWN_URGENT'
+  | 'TIMEOUT'
   | 'CORRECT'
   | 'WRONG'
   | 'ELIMINATED'

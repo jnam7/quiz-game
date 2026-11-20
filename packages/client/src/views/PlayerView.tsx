@@ -46,16 +46,31 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
   // 문제 풀이 실시간 카운트다운 타이머 (초)
   const [secondsLeft, setSecondsLeft] = useState<number>(15);
+  const lastVibrateSecRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (gameState.status === 'IN_ROUND' && roundInfo?.serverEndTime) {
       const updateTimer = () => {
         const remaining = Math.max(0, Math.ceil((roundInfo.serverEndTime - Date.now()) / 1000));
         setSecondsLeft(remaining);
+
+        // 3초 전 촉각 진동 (Haptic Vibration) 연출
+        if (lastVibrateSecRef.current !== remaining) {
+          lastVibrateSecRef.current = remaining;
+          if (remaining <= 3 && remaining > 0) {
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              try {
+                navigator.vibrate([100, 80, 100]);
+              } catch {}
+            }
+          }
+        }
       };
       updateTimer();
       const interval = setInterval(updateTimer, 200);
       return () => clearInterval(interval);
+    } else {
+      lastVibrateSecRef.current = null;
     }
   }, [gameState.status, roundInfo]);
 
@@ -713,18 +728,43 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
             }}>
               {roundInfo?.category || '퀴즈'}
             </span>
+            {gameState.status === 'QUESTION_READING' && (
+              <span style={{
+                marginLeft: '4px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                color: '#fbbf24',
+                background: 'rgba(251, 191, 36, 0.15)',
+                border: '1px solid rgba(251, 191, 36, 0.4)',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                animation: 'pulse 1.2s infinite'
+              }}>
+                🎙️ 낭독 중...
+              </span>
+            )}
             {gameState.status === 'IN_ROUND' && (
               <span style={{
                 marginLeft: '4px',
-                fontSize: '0.95rem',
+                fontSize: secondsLeft <= 3 ? '1rem' : '0.95rem',
                 fontWeight: 900,
-                color: secondsLeft <= 5 ? '#f87171' : '#38bdf8',
-                background: secondsLeft <= 5 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                border: secondsLeft <= 5 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(56, 189, 248, 0.3)',
+                color: secondsLeft <= 3 ? '#ef4444' : secondsLeft <= 5 ? '#f87171' : '#38bdf8',
+                background: secondsLeft <= 3 ? 'rgba(239, 68, 68, 0.25)' : secondsLeft <= 5 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                border: secondsLeft <= 3 ? '1.5px solid #ef4444' : secondsLeft <= 5 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(56, 189, 248, 0.3)',
                 padding: '2px 8px',
-                borderRadius: '6px'
+                borderRadius: '6px',
+                animation: secondsLeft <= 3 ? 'heartbeat 0.6s infinite' : 'none',
+                boxShadow: secondsLeft <= 3 ? '0 0 15px rgba(239, 68, 68, 0.7)' : 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
               }}>
-                ⏱️ {secondsLeft}초
+                {secondsLeft <= 3 ? (
+                  <span style={{ display: 'inline-block', animation: 'shake 0.3s infinite' }}>⏰</span>
+                ) : (
+                  <span>⏱️</span>
+                )}
+                <span>{secondsLeft}초</span>
               </span>
             )}
           </div>
@@ -759,13 +799,23 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           background: 'linear-gradient(180deg, #1e293b, #0f172a)',
           borderRadius: '14px',
           padding: '14px',
-          border: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+          border: (secondsLeft <= 3 && gameState.status === 'IN_ROUND')
+            ? '2px solid #ef4444'
+            : gameState.status === 'QUESTION_READING'
+            ? '1.5px solid #facc15'
+            : '1px solid rgba(255,255,255,0.12)',
+          boxShadow: (secondsLeft <= 3 && gameState.status === 'IN_ROUND')
+            ? '0 0 25px rgba(239, 68, 68, 0.7)'
+            : '0 4px 16px rgba(0, 0, 0, 0.3)',
+          animation: (secondsLeft <= 3 && gameState.status === 'IN_ROUND')
+            ? 'redWarningBorder 0.8s infinite'
+            : 'none',
           marginBottom: '8px',
           minHeight: '80px',
           maxHeight: isMobile ? '140px' : '180px',
           overflowY: 'auto',
-          flexShrink: 0
+          flexShrink: 0,
+          transition: 'border-color 0.3s ease'
         }}
       >
         <h2 style={{
@@ -779,6 +829,17 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         }}>
           {roundInfo?.question || roundResult?.question || '문제를 로딩 중입니다...'}
         </h2>
+        {gameState.status === 'QUESTION_READING' && (
+          <div style={{
+            marginTop: '6px',
+            color: '#fbbf24',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            animation: 'pulse 1.2s infinite'
+          }}>
+            🎙️ 문제를 낭독하고 있습니다. 잠시 후 보기가 공개됩니다...
+          </div>
+        )}
         {isSubmitted && gameState.status === 'IN_ROUND' && (
           <div style={{
             marginTop: '6px',
@@ -793,9 +854,10 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         )}
       </div>
 
-      {/* 4지선다 선택지 버튼 */}
+      {/* 4지선다 선택지 버튼 (낭독 단계 시 블러 및 안내 오버레이) */}
       {hasOptions && (
         <div style={{
+          position: 'relative',
           display: isMobile ? 'flex' : 'grid',
           gridTemplateColumns: isMobile ? undefined : '1fr 1fr',
           flexDirection: isMobile ? 'column' : undefined,
@@ -803,6 +865,31 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           marginBottom: '8px',
           flexShrink: 0
         }}>
+          {gameState.status === 'QUESTION_READING' && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(15, 23, 42, 0.6)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(3px)',
+              border: '1.5px solid rgba(251, 191, 36, 0.4)',
+              padding: '12px'
+            }}>
+              <div style={{ fontSize: '1.6rem', marginBottom: '4px', animation: 'pulse 1.2s infinite' }}>🎙️</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fef08a', textAlign: 'center', wordBreak: 'keep-all' }}>
+                문제 사전 낭독 중
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginTop: '3px', textAlign: 'center', wordBreak: 'keep-all' }}>
+                잠시 후 보기가 공개되면 즉시 답을 선택하세요!
+              </div>
+            </div>
+          )}
+
           {currentOptions.map((opt, idx) => {
             const isSelected = selectedOption === idx;
             let bg = '#1e293b';
@@ -844,7 +931,11 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
                   minHeight: gameState.status === 'ROUND_RESULT' ? '44px' : '52px',
                   touchAction: 'manipulation',
                   wordBreak: 'keep-all',
-                  boxShadow: isSelected ? '0 4px 12px rgba(79, 70, 229, 0.4)' : 'none'
+                  boxShadow: isSelected ? '0 4px 12px rgba(79, 70, 229, 0.4)' : 'none',
+                  filter: gameState.status === 'QUESTION_READING' ? 'blur(6px)' : 'none',
+                  opacity: gameState.status === 'QUESTION_READING' ? 0.4 : 1,
+                  animation: gameState.status === 'IN_ROUND' ? 'optionsReveal 0.4s ease-out' : 'none',
+                  transition: 'filter 0.3s ease, opacity 0.3s ease'
                 }}
               >
                 <span style={{

@@ -102,7 +102,14 @@ export function setupSocketHandlers(
       }
     });
 
-    // 2-3. 스마트폰 참가자 뒤로가기 / 브라우저 닫기 시 즉시 퇴장 처리
+    // 2-4. TV TTS 낭독 완료 또는 타이머로 보기 오픈 요청
+    socket.on('round:open_options', () => {
+      try {
+        gameEngine.openOptionsAndStartTimer();
+      } catch (err) {
+        console.error('[round:open_options Error]:', err);
+      }
+    });
     socket.on('player:leave', (data, callback) => {
       try {
         const token = data?.token;
@@ -193,6 +200,14 @@ export function setupSocketHandlers(
         gameEngine.skipRound();
       } catch (err) {
         console.error('[admin:skip_round Error]:', err);
+      }
+    });
+
+    socket.on('admin:skip_reading', () => {
+      try {
+        gameEngine.openOptionsAndStartTimer();
+      } catch (err) {
+        console.error('[admin:skip_reading Error]:', err);
       }
     });
 

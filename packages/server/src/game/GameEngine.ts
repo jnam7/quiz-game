@@ -27,6 +27,7 @@ export class GameEngine {
   private roundStartTime = 0;
   private roundEndTime = 0;
   private roundTimeoutTimer: NodeJS.Timeout | null = null;
+  private readingTimeoutTimer: NodeJS.Timeout | null = null;
   private countdownTimer: NodeJS.Timeout | null = null;
   private pausedTimeRemaining = 0;
 
@@ -351,7 +352,7 @@ export class GameEngine {
     return true;
   }
 
-  // --- 다음 라운드 출제 ---
+  // --- 다음 라운드 출제 (1단계: 문제 사전 낭독) ---
   public startNextRound() {
     const survivors = this.getSurvivors();
 
@@ -367,8 +368,17 @@ export class GameEngine {
       return;
     }
 
+    if (this.roundTimeoutTimer) {
+      clearTimeout(this.roundTimeoutTimer);
+      this.roundTimeoutTimer = null;
+    }
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
+
     this.currentRoundNumber++;
-    this.status = 'IN_ROUND';
+    this.status = 'QUESTION_READING';
     this.lastRoundResult = undefined;
 
     // 참가자(생존자 및 관전자) 답변 초기화
@@ -377,10 +387,10 @@ export class GameEngine {
       p.answeredAt = undefined;
     }
 
-    // 라운드별 설정 (1:10s, 2:8s, 3:7s, 4:7s, 5+:5s)
+    // 라운드별 설정
     const stageRule = DEFAULT_STAGE_RULES[Math.min(this.currentRoundNumber, 5)];
-    const timeLimit = this.settings.questionTimeLimit || this.settings.stageTimeLimits[this.currentRoundNumber] || stageRule.timeLimit;
-    const stageName = this.currentRoundNumber <= 5 ? stageRule.stageName : `결승 연장전 ${this.currentRoundNumber}라운드`;
+    const timeLimit = this.settings.questionTimeLimit || this.settings.stageTimeLimits[this.currentRoundNumber] || stageRule?.timeLimit || 15;
+    const stageName = this.currentRoundNumber <= 5 ? (stageRule?.stageName || `라운드 ${this.currentRoundNumber}`) : `결승 연장전 ${this.currentRoundNumber}라운드`;
 
     // 문제은행에서 승인된 미사용 문제 무작위 선정
     this.activeQuiz = this.selectNextQuiz();
@@ -390,6 +400,48 @@ export class GameEngine {
       this.endGame(survivors[0], false);
       return;
     }
+
+    this.roundStartTime = 0;
+    this.roundEndTime = 0;
+
+    const roundInfo: RoundInfo = {
+      roundNumber: this.currentRoundNumber,
+      stageName,
+      totalRounds: Math.max(5, this.currentRoundNumber),
+      quizId: this.activeQuiz.id,
+      category: this.activeQuiz.category,
+      question: this.activeQuiz.question,
+      options: this.activeQuiz.options,
+      timeLimit,
+      serverStartTime: 0,
+      serverEndTime: 0,
+      isReading: true
+    };
+
+    console.log(`[Round ${this.currentRoundNumber} Reading] 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id})`);
+    this.emitRoundStart(roundInfo);
+    this.syncState();
+
+    // TV TTS 낭독 실패 또는 지연 대비 서버 안전 타이머 (8초)
+    this.readingTimeoutTimer = setTimeout(() => {
+      console.log(`[Round ${this.currentRoundNumber}] 낭독 안전 타이머(8초) 도달 -> 즉시 보기 오픈`);
+      this.openOptionsAndStartTimer();
+    }, 8000);
+  }
+
+  // --- 문제 낭독 완료 후 4개 보기 오픈 및 제한시간 타이머 시작 (2단계) ---
+  public openOptionsAndStartTimer(): void {
+    if (this.status !== 'QUESTION_READING' || !this.activeQuiz) return;
+
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
+
+    this.status = 'IN_ROUND';
+    const stageRule = DEFAULT_STAGE_RULES[Math.min(this.currentRoundNumber, 5)];
+    const timeLimit = this.settings.questionTimeLimit || this.settings.stageTimeLimits[this.currentRoundNumber] || stageRule?.timeLimit || 15;
+    const stageName = this.currentRoundNumber <= 5 ? (stageRule?.stageName || `라운드 ${this.currentRoundNumber}`) : `결승 연장전 ${this.currentRoundNumber}라운드`;
 
     this.roundStartTime = Date.now();
     this.roundEndTime = this.roundStartTime + timeLimit * 1000;
@@ -401,18 +453,18 @@ export class GameEngine {
       quizId: this.activeQuiz.id,
       category: this.activeQuiz.category,
       question: this.activeQuiz.question,
-      options: this.activeQuiz.options, // 4개 보기 전달 (정답 번호는 일절 포함하지 않음)
+      options: this.activeQuiz.options,
       timeLimit,
       serverStartTime: this.roundStartTime,
-      serverEndTime: this.roundEndTime
+      serverEndTime: this.roundEndTime,
+      isReading: false
     };
 
-    console.log(`[Round ${this.currentRoundNumber} Start] 제한시간: ${timeLimit}초, 문제 ID: ${this.activeQuiz.id}`);
+    console.log(`[Round ${this.currentRoundNumber} Options Opened] 제한시간: ${timeLimit}초, 문제 ID: ${this.activeQuiz.id}`);
     this.emitRoundStart(roundInfo);
     this.emitPlaySound('ROUND_START');
     this.syncState();
 
-    // 서버 기준 자동 마감 타이머 등록
     if (this.roundTimeoutTimer) clearTimeout(this.roundTimeoutTimer);
     this.roundTimeoutTimer = setTimeout(() => {
       this.finishRound();
@@ -451,9 +503,13 @@ export class GameEngine {
       clearTimeout(this.roundTimeoutTimer);
       this.roundTimeoutTimer = null;
     }
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
 
     this.currentRoundNumber++;
-    this.status = 'IN_ROUND';
+    this.status = 'QUESTION_READING';
     this.lastRoundResult = undefined;
 
     // 참가자(생존자 및 관전자) 답변 초기화
@@ -474,8 +530,8 @@ export class GameEngine {
     this.usedQuizIds.add(this.activeQuiz.id);
 
     const timeLimit = this.settings.questionTimeLimit || 15; // 설정된 제한시간 적용 (기본 15초)
-    this.roundStartTime = Date.now();
-    this.roundEndTime = this.roundStartTime + timeLimit * 1000;
+    this.roundStartTime = 0;
+    this.roundEndTime = 0;
 
     const roundInfo: RoundInfo = {
       roundNumber: this.currentRoundNumber,
@@ -486,18 +542,19 @@ export class GameEngine {
       question: this.activeQuiz.question,
       options: this.activeQuiz.options,
       timeLimit,
-      serverStartTime: this.roundStartTime,
-      serverEndTime: this.roundEndTime
+      serverStartTime: 0,
+      serverEndTime: 0,
+      isReading: true
     };
 
-    console.log(`[Random Quiz Triggered] 라운드 ${this.currentRoundNumber}, 문제 ID: ${this.activeQuiz.id} (${this.activeQuiz.category})`);
+    console.log(`[Random Quiz Triggered] 라운드 ${this.currentRoundNumber}, 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id})`);
     this.emitRoundStart(roundInfo);
-    this.emitPlaySound('ROUND_START');
     this.syncState();
 
-    this.roundTimeoutTimer = setTimeout(() => {
-      this.finishRound();
-    }, timeLimit * 1000);
+    this.readingTimeoutTimer = setTimeout(() => {
+      console.log(`[Random Quiz R${this.currentRoundNumber}] 낭독 안전 타이머(8초) 도달 -> 즉시 보기 오픈`);
+      this.openOptionsAndStartTimer();
+    }, 8000);
   }
 
   // --- 문제 자동 선별 (체크된 카테고리 필터링 & 미사용 우선) ---
@@ -546,9 +603,13 @@ export class GameEngine {
 
   // --- 라운드 종료 및 정답/탈락 판정 ---
   public finishRound() {
-    if (this.status !== 'IN_ROUND' || !this.activeQuiz) return;
+    if ((this.status !== 'IN_ROUND' && this.status !== 'QUESTION_READING') || !this.activeQuiz) return;
     this.status = 'ROUND_RESULT';
 
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
     if (this.roundTimeoutTimer) {
       clearTimeout(this.roundTimeoutTimer);
       this.roundTimeoutTimer = null;
@@ -635,6 +696,10 @@ export class GameEngine {
     this.status = 'GAME_OVER';
     this.gameEndedAt = Date.now();
 
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
     if (this.roundTimeoutTimer) {
       clearTimeout(this.roundTimeoutTimer);
       this.roundTimeoutTimer = null;
@@ -664,13 +729,17 @@ export class GameEngine {
 
   // --- 관리자 제어 기능 ---
   public pauseGame() {
-    if (this.status === 'IN_ROUND') {
-      this.status = 'PAUSED';
+    if (this.status === 'IN_ROUND' || this.status === 'QUESTION_READING') {
+      if (this.readingTimeoutTimer) {
+        clearTimeout(this.readingTimeoutTimer);
+        this.readingTimeoutTimer = null;
+      }
       if (this.roundTimeoutTimer) {
         clearTimeout(this.roundTimeoutTimer);
         this.roundTimeoutTimer = null;
       }
-      this.pausedTimeRemaining = Math.max(0, this.roundEndTime - Date.now());
+      this.pausedTimeRemaining = this.status === 'IN_ROUND' ? Math.max(0, this.roundEndTime - Date.now()) : 15000;
+      this.status = 'PAUSED';
       this.syncState();
     }
   }
@@ -690,7 +759,11 @@ export class GameEngine {
   }
 
   public skipRound() {
-    if (this.status === 'IN_ROUND') {
+    if (this.status === 'IN_ROUND' || this.status === 'QUESTION_READING') {
+      if (this.readingTimeoutTimer) {
+        clearTimeout(this.readingTimeoutTimer);
+        this.readingTimeoutTimer = null;
+      }
       if (this.roundTimeoutTimer) {
         clearTimeout(this.roundTimeoutTimer);
         this.roundTimeoutTimer = null;
@@ -725,6 +798,10 @@ export class GameEngine {
   }
 
   public resetGame() {
+    if (this.readingTimeoutTimer) {
+      clearTimeout(this.readingTimeoutTimer);
+      this.readingTimeoutTimer = null;
+    }
     if (this.roundTimeoutTimer) {
       clearTimeout(this.roundTimeoutTimer);
       this.roundTimeoutTimer = null;
@@ -862,7 +939,7 @@ export class GameEngine {
       players: Array.from(this.players.values()),
       survivors,
       topRankings: this.calculateTopRankings(),
-      currentRoundInfo: this.status === 'IN_ROUND' && this.activeQuiz ? {
+      currentRoundInfo: (this.status === 'QUESTION_READING' || this.status === 'IN_ROUND') && this.activeQuiz ? {
         roundNumber: this.currentRoundNumber,
         stageName: DEFAULT_STAGE_RULES[Math.min(this.currentRoundNumber, 5)]?.stageName || `결승 연장전`,
         totalRounds: Math.max(5, this.currentRoundNumber),
@@ -870,9 +947,10 @@ export class GameEngine {
         category: this.activeQuiz.category,
         question: this.activeQuiz.question,
         options: this.activeQuiz.options,
-        timeLimit: Math.round((this.roundEndTime - this.roundStartTime) / 1000),
+        timeLimit: this.status === 'IN_ROUND' ? Math.round((this.roundEndTime - this.roundStartTime) / 1000) : (this.settings.questionTimeLimit || 15),
         serverStartTime: this.roundStartTime,
-        serverEndTime: this.roundEndTime
+        serverEndTime: this.roundEndTime,
+        isReading: this.status === 'QUESTION_READING'
       } : undefined,
       winner,
       lastRoundResult: this.lastRoundResult,

@@ -29,6 +29,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [serverInfo, setServerInfo] = useState<{ publicUrl?: string; localIp: string; clientPort: number } | null>(null);
   const [answeredCount, setAnsweredCount] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true); // TV Web Speech API (TTS) 낭독 활성화
 
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -174,18 +175,82 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   }, [gameState.status]);
 
-  // 실시간 타이머 계산
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
+  // 1단계: Web Speech API (TTS) 한국어 문제 사전 낭독
   useEffect(() => {
-    if (gameState.status === 'IN_ROUND' && roundInfo) {
+    if (gameState.status === 'QUESTION_READING' && roundInfo) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && ttsEnabled) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(roundInfo.question);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        let hasOpened = false;
+        const triggerOpenOptions = () => {
+          if (hasOpened) return;
+          hasOpened = true;
+          socket.emit('round:open_options');
+        };
+
+        utterance.onend = () => {
+          console.log('[TV TTS] 문제 낭독 완료 -> 보기 오픈 요청');
+          triggerOpenOptions();
+        };
+
+        utterance.onerror = (e) => {
+          console.error('[TV TTS Error]:', e);
+          triggerOpenOptions();
+        };
+
+        window.speechSynthesis.speak(utterance);
+
+        // 음성합성이 멈추거나 백그라운드 지연 발생 대비 안전 타이머 (7.5초)
+        const fallbackTimer = setTimeout(() => {
+          console.log('[TV TTS Fallback] 안전 타이머 도달 -> 보기 오픈 요청');
+          triggerOpenOptions();
+        }, 7500);
+
+        return () => {
+          clearTimeout(fallbackTimer);
+          if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+          }
+        };
+      } else {
+        // 음성 낭독이 꺼져 있거나 브라우저 미지원 시 1.5초 후 자동 오픈
+        const timer = setTimeout(() => {
+          socket.emit('round:open_options');
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [gameState.status, roundInfo?.quizId, ttsEnabled]);
+
+  // 실시간 타이머 계산 및 종료 3초 전 긴박한 사운드/0초 타임오버 버저
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
+  const lastTickSecondRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (gameState.status === 'IN_ROUND' && roundInfo && roundInfo.serverEndTime) {
       const interval = setInterval(() => {
         const remaining = Math.max(0, Math.ceil((roundInfo.serverEndTime - Date.now()) / 1000));
         setSecondsRemaining(remaining);
-        if (remaining <= 3 && remaining > 0) {
-          soundEngine.play('COUNTDOWN_URGENT');
+        if (lastTickSecondRef.current !== remaining) {
+          lastTickSecondRef.current = remaining;
+          if (remaining <= 3 && remaining > 0) {
+            soundEngine.play('COUNTDOWN_URGENT');
+          } else if (remaining === 0) {
+            soundEngine.play('TIMEOUT');
+          }
         }
-      }, 250);
+      }, 200);
       return () => clearInterval(interval);
+    } else {
+      lastTickSecondRef.current = null;
     }
   }, [gameState.status, roundInfo]);
 
@@ -199,7 +264,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   };
 
   const survivors = gameState.survivors;
-  const isUrgent = gameState.status === 'IN_ROUND' && secondsRemaining <= 3;
+  const isUrgent = gameState.status === 'IN_ROUND' && secondsRemaining <= 3 && secondsRemaining > 0;
 
   const renderBottomStatus = (showTicker: boolean) => (
     <div
@@ -397,8 +462,10 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         minHeight: '100dvh',
         height: isMobile ? 'auto' : '100vh',
         background: isUrgent
-          ? 'radial-gradient(circle at 50% 50%, #450a0a 0%, #020617 100%)'
+          ? 'radial-gradient(circle at 50% 50%, #5c0b0b 0%, #020617 100%)'
           : 'radial-gradient(circle at 50% 30%, #1e1b4b 0%, #030712 100%)',
+        border: isUrgent ? '4px solid #ef4444' : '4px solid transparent',
+        animation: isUrgent ? 'redWarningBorder 0.8s infinite' : 'none',
         color: '#f8fafc',
         display: 'flex',
         flexDirection: 'column',
@@ -406,7 +473,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         overflowY: isMobile ? 'auto' : 'hidden',
         overflowX: 'hidden',
         boxSizing: 'border-box',
-        transition: 'background 0.3s ease'
+        transition: 'background 0.3s ease, border-color 0.3s ease'
       }}
     >
       {/* 1. 상단 바: 스테이지 정보 / 생존자 수 / 음향 토글 / 실시간 채팅 티커 */}
@@ -443,7 +510,23 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               {gameState.players.length - survivors.length} <span style={{ fontSize: '0.9rem' }}>명</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setTtsEnabled(prev => !prev)}
+              style={{
+                padding: '6px 12px',
+                background: ttsEnabled ? '#059669' : '#475569',
+                color: 'white',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+              title="문제 낭독 음성 ON/OFF 토글"
+            >
+              {ttsEnabled ? '🗣️ 음성 낭독 ON' : '🔇 음성 낭독 OFF'}
+            </button>
             {!soundEnabled && (
               <button
                 onClick={toggleSound}
@@ -609,24 +692,56 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         </div>
       )}
 
-      {/* 4. 라운드 진행 중 (대형 문제 & 4개 보기) */}
-      {(gameState.status === 'IN_ROUND' || gameState.status === 'ROUND_RESULT') && (
+      {/* 4. 라운드 진행 중 (문제 낭독, 타이머 카운트다운, 4개 보기) */}
+      {(gameState.status === 'QUESTION_READING' || gameState.status === 'IN_ROUND' || gameState.status === 'ROUND_RESULT') && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           {/* 중앙 초대형 카운트다운 타이머 & 답변 제출 현황 게이지 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ fontSize: isMobile ? '0.95rem' : '1.2rem', color: '#94a3b8' }}>
-              실시간 답변 제출: <strong style={{ color: '#38bdf8' }}>{answeredCount}</strong> / {survivors.length}명
+              {gameState.status === 'QUESTION_READING' ? (
+                <span style={{ color: '#facc15', fontWeight: 800 }}>🎙️ 문제 낭독 중입니다...</span>
+              ) : (
+                <>실시간 답변 제출: <strong style={{ color: '#38bdf8' }}>{answeredCount}</strong> / {survivors.length}명</>
+              )}
             </div>
+
+            {gameState.status === 'QUESTION_READING' && (
+              <div
+                style={{
+                  fontSize: isMobile ? '1.4rem' : '2.2rem',
+                  fontWeight: 900,
+                  color: '#fbbf24',
+                  textShadow: '0 0 20px rgba(251, 191, 36, 0.6)',
+                  animation: 'pulse 1.2s infinite',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>🎙️</span>
+                <span>문제 낭독 중</span>
+              </div>
+            )}
+
             {gameState.status === 'IN_ROUND' && (
               <div
                 style={{
                   fontSize: isMobile ? '2.2rem' : '4rem',
                   fontWeight: 900,
                   color: isUrgent ? '#ef4444' : '#38bdf8',
-                  textShadow: isUrgent ? '0 0 30px #ef4444' : '0 0 20px #38bdf8'
+                  textShadow: isUrgent ? '0 0 35px #ef4444, 0 0 70px #ef4444' : '0 0 20px #38bdf8',
+                  animation: isUrgent ? 'heartbeat 0.6s infinite' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
               >
-                ⏳ {secondsRemaining}초
+                {isUrgent ? (
+                  <span style={{ display: 'inline-block', animation: 'shake 0.3s infinite' }}>⏰</span>
+                ) : (
+                  <span>⏳</span>
+                )}
+                <span>{secondsRemaining}초</span>
               </div>
             )}
           </div>
@@ -637,10 +752,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               background: 'rgba(30, 41, 59, 0.85)',
               borderRadius: '16px',
               padding: isMobile ? '16px 14px' : '30px 40px',
-              border: isUrgent ? '2px solid #ef4444' : '2px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: isUrgent ? '0 0 50px rgba(239, 68, 68, 0.4)' : '0 20px 50px rgba(0, 0, 0, 0.5)',
+              border: isUrgent ? '2px solid #ef4444' : gameState.status === 'QUESTION_READING' ? '2px solid #facc15' : '2px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: isUrgent ? '0 0 50px rgba(239, 68, 68, 0.6)' : gameState.status === 'QUESTION_READING' ? '0 0 30px rgba(250, 204, 21, 0.3)' : '0 20px 50px rgba(0, 0, 0, 0.5)',
               textAlign: 'center',
-              marginBottom: '14px'
+              marginBottom: '14px',
+              transition: 'all 0.3s ease'
             }}
           >
             <h2 style={{ fontSize: isMobile ? '1.25rem' : '2.4rem', fontWeight: 800, lineHeight: 1.4, color: '#ffffff', wordBreak: 'keep-all' }}>
@@ -648,69 +764,107 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             </h2>
           </div>
 
-          {/* 4지선다 보기 그리드 */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '10px' : '16px', marginBottom: '14px' }}>
-            {roundInfo?.options.map((option, idx) => {
-              let bg = 'rgba(15, 23, 42, 0.8)';
-              let border = '2px solid rgba(255, 255, 255, 0.15)';
-              let textColor = '#ffffff';
-
-              if (gameState.status === 'ROUND_RESULT' && roundResult) {
-                if (idx === roundResult.correctAnswerIndex) {
-                  bg = 'rgba(34, 197, 94, 0.35)';
-                  border = '3px solid #22c55e';
-                  textColor = '#86efac';
-                } else {
-                  bg = 'rgba(15, 23, 42, 0.4)';
-                  textColor = '#64748b';
-                }
-              }
-
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    background: bg,
-                    border,
-                    borderRadius: '14px',
-                    padding: isMobile ? '12px 16px' : '20px 28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: isMobile ? '1.05rem' : '1.6rem',
-                    fontWeight: 700,
-                    color: textColor,
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: isMobile ? '32px' : '42px',
-                        height: isMobile ? '32px' : '42px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.15)',
-                        marginRight: isMobile ? '10px' : '16px',
-                        fontSize: isMobile ? '1rem' : '1.3rem',
-                        fontWeight: 900
-                      }}
-                    >
-                      {idx + 1}
-                    </span>
-                    <span style={{ wordBreak: 'keep-all' }}>{option}</span>
-                  </div>
-
-                  {gameState.status === 'ROUND_RESULT' && roundResult && (
-                    <div style={{ fontSize: isMobile ? '0.95rem' : '1.3rem', color: idx === roundResult.correctAnswerIndex ? '#4ade80' : '#f87171' }}>
-                      {roundResult.distribution[idx] || 0}명 선택
-                    </div>
-                  )}
+          {/* 4지선다 보기 그리드 (문제 낭독 시 블러 처리 및 안내 오버레이) */}
+          <div style={{ position: 'relative', marginBottom: '14px' }}>
+            {gameState.status === 'QUESTION_READING' && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                background: 'rgba(15, 23, 42, 0.55)',
+                borderRadius: '16px',
+                backdropFilter: 'blur(3px)',
+                border: '2px solid rgba(251, 191, 36, 0.5)',
+                padding: '16px'
+              }}>
+                <div style={{ fontSize: isMobile ? '2rem' : '3rem', marginBottom: '6px', animation: 'pulse 1.2s infinite' }}>🎙️</div>
+                <div style={{ fontSize: isMobile ? '1.2rem' : '1.8rem', fontWeight: 900, color: '#fef08a', textShadow: '0 0 20px rgba(250, 204, 21, 0.6)', wordBreak: 'keep-all', textAlign: 'center' }}>
+                  문제를 낭독하고 있습니다
                 </div>
-              );
-            })}
+                <div style={{ fontSize: isMobile ? '0.85rem' : '1.1rem', color: '#cbd5e1', marginTop: '6px', textAlign: 'center', wordBreak: 'keep-all' }}>
+                  낭독이 완료되면 4개 보기가 오픈되고 타이머가 시작됩니다!
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                gap: isMobile ? '10px' : '16px',
+                filter: gameState.status === 'QUESTION_READING' ? 'blur(8px)' : 'none',
+                opacity: gameState.status === 'QUESTION_READING' ? 0.45 : 1,
+                pointerEvents: gameState.status === 'QUESTION_READING' ? 'none' : 'auto',
+                transition: 'all 0.4s ease',
+                animation: gameState.status === 'IN_ROUND' ? 'optionsReveal 0.4s ease-out' : 'none'
+              }}
+            >
+              {roundInfo?.options.map((option, idx) => {
+                let bg = 'rgba(15, 23, 42, 0.8)';
+                let border = '2px solid rgba(255, 255, 255, 0.15)';
+                let textColor = '#ffffff';
+
+                if (gameState.status === 'ROUND_RESULT' && roundResult) {
+                  if (idx === roundResult.correctAnswerIndex) {
+                    bg = 'rgba(34, 197, 94, 0.35)';
+                    border = '3px solid #22c55e';
+                    textColor = '#86efac';
+                  } else {
+                    bg = 'rgba(15, 23, 42, 0.4)';
+                    textColor = '#64748b';
+                  }
+                }
+
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      background: bg,
+                      border,
+                      borderRadius: '14px',
+                      padding: isMobile ? '12px 16px' : '20px 28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: isMobile ? '1.05rem' : '1.6rem',
+                      fontWeight: 700,
+                      color: textColor,
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: isMobile ? '32px' : '42px',
+                          height: isMobile ? '32px' : '42px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          marginRight: isMobile ? '10px' : '16px',
+                          fontSize: isMobile ? '1rem' : '1.3rem',
+                          fontWeight: 900
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span style={{ wordBreak: 'keep-all' }}>{option}</span>
+                    </div>
+
+                    {gameState.status === 'ROUND_RESULT' && roundResult && (
+                      <div style={{ fontSize: isMobile ? '0.95rem' : '1.3rem', color: idx === roundResult.correctAnswerIndex ? '#4ade80' : '#f87171' }}>
+                        {roundResult.distribution[idx] || 0}명 선택
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* 라운드 결과 해설 */}

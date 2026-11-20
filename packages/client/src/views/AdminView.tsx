@@ -185,6 +185,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   const handlePause = () => socket.emit('admin:pause_game');
   const handleResume = () => socket.emit('admin:resume_game');
   const handleSkip = () => socket.emit('admin:skip_round');
+  const handleSkipReading = () => socket.emit('admin:skip_reading');
   const handleRandomQuiz = () => {
     socket.emit('admin:random_quiz');
   };
@@ -806,7 +807,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             </button>
             <button
               onClick={handleSkip}
-              disabled={gameState.status !== 'IN_ROUND'}
+              disabled={gameState.status !== 'IN_ROUND' && gameState.status !== 'QUESTION_READING'}
               style={{
                 minHeight: '48px',
                 padding: '10px 8px',
@@ -823,6 +824,29 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             >
               ⏭️ 문제 스킵
             </button>
+            {gameState.status === 'QUESTION_READING' && (
+              <button
+                onClick={handleSkipReading}
+                style={{
+                  minHeight: '48px',
+                  padding: '10px 8px',
+                  background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                  color: 'white',
+                  fontWeight: 900,
+                  fontSize: isMobile ? '0.88rem' : '0.95rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  wordBreak: 'keep-all',
+                  boxShadow: '0 0 15px rgba(245, 158, 11, 0.6)',
+                  gridColumn: isMobile ? 'span 2' : undefined
+                }}
+                title="문제 낭독을 즉시 건너뛰고 4개 보기를 바로 공개합니다"
+              >
+                ⚡ 즉시 보기 공개
+              </button>
+            )}
             <button
               onClick={handleRandomQuiz}
               style={{
