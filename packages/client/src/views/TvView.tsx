@@ -117,6 +117,10 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       setChatMessages(history.slice(-50));
     };
 
+    const handleChatCleared = () => {
+      setChatMessages([]);
+    };
+
     const handleTunnelUpdated = (newPublicUrl: string) => {
       if (connectionMode === 'public' && newPublicUrl) {
         setJoinUrlText(newPublicUrl);
@@ -141,6 +145,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     socket.on('game:winner_announced', handleWinner);
     socket.on('chat:message', handleChatMessage);
     socket.on('chat:history', handleChatHistory);
+    socket.on('chat:cleared', handleChatCleared);
     socket.on('server:tunnel_updated', handleTunnelUpdated);
     socket.on('game:force_lobby', handleForceLobby);
 
@@ -153,6 +158,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       socket.off('game:winner_announced', handleWinner);
       socket.off('chat:message', handleChatMessage);
       socket.off('chat:history', handleChatHistory);
+      socket.off('chat:cleared', handleChatCleared);
       socket.off('server:tunnel_updated', handleTunnelUpdated);
       socket.off('game:force_lobby', handleForceLobby);
     };
@@ -807,22 +813,23 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             </div>
           </div>
 
-          {/* 대기실로 바로 이동 버튼 */}
-          <button
-            onClick={handleResetToLobby}
-            style={{
-              padding: isMobile ? '10px 24px' : '12px 36px',
-              backgroundColor: '#4f46e5',
-              color: 'white',
-              fontSize: isMobile ? '1.05rem' : '1.2rem',
-              fontWeight: 900,
-              borderRadius: '14px',
-              boxShadow: '0 8px 30px rgba(79, 70, 229, 0.6)',
-              marginBottom: '10px'
-            }}
-          >
-            🏠 새 게임 대기실로 이동
-          </button>
+          {/* 결과 유지 안내 배너 */}
+          <div style={{
+            padding: isMobile ? '8px 16px' : '12px 28px',
+            background: 'rgba(99, 102, 241, 0.2)',
+            border: '1.5px solid #6366f1',
+            borderRadius: '14px',
+            color: '#e0e7ff',
+            fontSize: isMobile ? '0.9rem' : '1.15rem',
+            fontWeight: 800,
+            marginBottom: '12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>⏳</span>
+            <span>관리자가 다음 게임을 시작하기 전까지 최종 결과 화면이 고정 유지됩니다.</span>
+          </div>
 
           <div style={{ fontSize: isMobile ? '0.85rem' : '1rem', color: '#94a3b8' }}>
             총 참가: {gameState.players.length}명 | 진행 라운드: {gameState.currentRound}R

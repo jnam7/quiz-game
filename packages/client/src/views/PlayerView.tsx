@@ -212,6 +212,11 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
       setChatMessages(history);
     };
 
+    const handleChatCleared = () => {
+      setChatMessages([]);
+      setUnreadCount(0);
+    };
+
     // 전원 강제 대기실 이동 수신
     const handleForceLobby = () => {
       setRoundInfo(undefined);
@@ -247,6 +252,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
     socket.on('game:round_ended', handleRoundEnd);
     socket.on('chat:message', handleChatMessage);
     socket.on('chat:history', handleChatHistory);
+    socket.on('chat:cleared', handleChatCleared);
     socket.on('game:force_lobby', handleForceLobby);
     socket.on('game:player_kicked_all', handlePlayerKickedAll);
 
@@ -255,6 +261,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
       socket.off('game:round_ended', handleRoundEnd);
       socket.off('chat:message', handleChatMessage);
       socket.off('chat:history', handleChatHistory);
+      socket.off('chat:cleared', handleChatCleared);
       socket.off('game:force_lobby', handleForceLobby);
       socket.off('game:player_kicked_all', handlePlayerKickedAll);
     };
@@ -625,24 +632,23 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           </div>
         </div>
 
-        {/* 대기실로 바로 이동 버튼 */}
-        <button
-          onClick={handleRequestReset}
-          style={{
-            padding: '14px 28px',
-            backgroundColor: '#4f46e5',
-            color: 'white',
-            fontSize: '1.05rem',
-            fontWeight: 800,
-            borderRadius: '12px',
-            boxShadow: '0 8px 25px rgba(79, 70, 229, 0.4)',
-            marginBottom: '12px',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          🏠 새 게임 대기실로 바로 이동
-        </button>
+        {/* 최종 결과 영구 유지 안내 배너 */}
+        <div style={{
+          padding: '12px 20px',
+          background: 'rgba(99, 102, 241, 0.15)',
+          border: '1px solid rgba(99, 102, 241, 0.4)',
+          borderRadius: '12px',
+          color: '#c7d2fe',
+          fontSize: '0.92rem',
+          fontWeight: 700,
+          marginBottom: '12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>⏳</span>
+          <span>관리자가 새 게임을 시작할 때까지 최종 결과 화면이 유지됩니다.</span>
+        </div>
       </div>
     );
     return renderResponsiveLayout(gameOverContent);

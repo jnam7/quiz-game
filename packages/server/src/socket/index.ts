@@ -89,9 +89,13 @@ export function setupSocketHandlers(
       }
     });
 
-    // 2-2. 1등 확정 / 무승부 시 대기실 복귀 요청
+    // 2-2. 1등 확정 / 무승부 시 대기실 복귀 요청 (GAME_OVER 시에는 관리자 제어 전까지 무시)
     socket.on('game:request_reset', () => {
       try {
+        if (gameEngine.getState().status === 'GAME_OVER') {
+          console.log('[Notice] GAME_OVER 상태에서는 클라이언트의 개별 복귀 요청으로 게임을 리셋하지 않습니다.');
+          return;
+        }
         gameEngine.requestResetToLobby();
       } catch (err) {
         console.error('[game:request_reset Error]:', err);
@@ -229,10 +233,22 @@ export function setupSocketHandlers(
 
     socket.on('admin:move_to_lobby', (callback) => {
       try {
-        gameEngine.requestResetToLobby();
+        gameEngine.resetGame();
         if (callback) callback({ success: true });
       } catch (err) {
         console.error('[admin:move_to_lobby Error]:', err);
+        if (callback) callback({ success: false });
+      }
+    });
+
+    socket.on('admin:chat_clear', (callback) => {
+      try {
+        gameEngine.clearChatHistory();
+        io.to(SOCKET_ROOM_MAIN).emit('chat:cleared');
+        console.log('[Admin] Chat cleared broadcasted to all clients');
+        if (callback) callback({ success: true });
+      } catch (err) {
+        console.error('[admin:chat_clear Error]:', err);
         if (callback) callback({ success: false });
       }
     });

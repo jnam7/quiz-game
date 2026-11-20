@@ -267,6 +267,22 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     }
   };
 
+  const handleClearChat = () => {
+    if (confirm('정말로 모든 참가자 및 TV 화면의 실시간 채팅 내역을 초기화하시겠습니까?')) {
+      socket.emit('admin:chat_clear', (res) => {
+        if (res?.success) {
+          alert('모든 실시간 채팅 내역이 깨끗하게 초기화되었습니다.');
+        } else {
+          alert('채팅 초기화 처리에 실패했습니다.');
+        }
+      });
+    }
+  };
+
+  const handleUpdateTimeLimit = (sec: number) => {
+    socket.emit('admin:update_settings', { questionTimeLimit: sec });
+  };
+
   const handleAddQuiz = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuiz.question.trim() || newQuiz.options.some(o => !o.trim())) {
@@ -881,6 +897,71 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             >
               🧹 전원 퇴장 (0명)
             </button>
+            <button
+              onClick={handleClearChat}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#7c3aed',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all'
+              }}
+              title="모바일 참가자 및 TV 화면의 실시간 채팅 메시지를 모두 삭제합니다"
+            >
+              💬 채팅 초기화
+            </button>
+          </div>
+        </div>
+
+        {/* ⏱️ 문제 풀이 제한 시간 설정 (10초 / 15초 / 20초 / 25초) */}
+        <div style={{ background: '#1e293b', padding: isMobile ? '16px 14px' : '20px', borderRadius: '16px', border: '2px solid #0284c7', boxShadow: '0 8px 24px rgba(2, 132, 199, 0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '8px', marginBottom: '14px' }}>
+            <div>
+              <h3 style={{ fontSize: isMobile ? '1.15rem' : '1.25rem', color: '#38bdf8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>⏱️ 문제 풀이 제한 시간 설정</span>
+                <span style={{ fontSize: '0.8rem', color: '#facc15', background: 'rgba(250, 204, 21, 0.15)', border: '1px solid rgba(250, 204, 21, 0.3)', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
+                  현재 적용: {gameState.settings.questionTimeLimit || 15}초
+                </span>
+              </h3>
+              <p style={{ color: '#cbd5e1', fontSize: isMobile ? '0.82rem' : '0.88rem', marginTop: '4px' }}>
+                선택한 시간 제한이 다음 출제되는 모든 라운드 및 랜덤 문제에 즉시 반영됩니다.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '8px' : '12px' }}>
+            {[10, 15, 20, 25].map((sec) => {
+              const isSelected = (gameState.settings.questionTimeLimit || 15) === sec;
+              return (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => handleUpdateTimeLimit(sec)}
+                  style={{
+                    minHeight: '44px',
+                    padding: '8px 6px',
+                    background: isSelected ? 'linear-gradient(135deg, #0284c7, #2563eb)' : '#0f172a',
+                    border: isSelected ? '2px solid #38bdf8' : '1px solid #334155',
+                    borderRadius: '10px',
+                    color: isSelected ? '#ffffff' : '#cbd5e1',
+                    fontSize: isMobile ? '0.9rem' : '1.05rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    boxShadow: isSelected ? '0 4px 14px rgba(2, 132, 199, 0.4)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {sec}초 {isSelected && '✓'}
+                </button>
+              );
+            })}
           </div>
         </div>
 

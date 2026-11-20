@@ -81,6 +81,7 @@ export interface GameSettings {
   bgmEnabled: boolean;
   autoProgress: boolean; // 다음 문제 자동 진행 여부
   stageTimeLimits: { [roundNumber: number]: number }; // 라운드별 기본 제한시간
+  questionTimeLimit?: number; // 문제 풀이 제한 시간 (10 | 15 | 20 | 25초, 기본값: 15초)
   selectedCategories?: QuizCategory[]; // 출제할 문제 카테고리 필터
 }
 
@@ -160,6 +161,7 @@ export interface ClientToServerEvents {
   'admin:reset_game': () => void;
   'admin:clear_all_players': (callback?: (res: { success: boolean }) => void) => void;
   'admin:move_to_lobby': (callback?: (res: { success: boolean }) => void) => void;
+  'admin:chat_clear': (callback?: (res: { success: boolean }) => void) => void;
   'admin:update_settings': (settings: Partial<GameSettings>) => void;
   'admin:quiz:add': (quiz: Omit<QuizItem, 'id'>, callback: (res: { success: boolean; quiz?: QuizItem }) => void) => void;
   'admin:quiz:update': (quiz: QuizItem, callback: (res: { success: boolean }) => void) => void;
@@ -190,6 +192,7 @@ export interface ServerToClientEvents {
   'player:answered': (data: { token: string; answerCount: number; totalAlive: number }) => void;
   'chat:message': (chat: ChatMessage) => void;
   'chat:history': (messages: ChatMessage[]) => void;
+  'chat:cleared': () => void;
   'server:tunnel_updated': (url: string) => void;
   'error:message': (message: string) => void;
 }

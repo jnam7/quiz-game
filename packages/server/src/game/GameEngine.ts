@@ -379,7 +379,7 @@ export class GameEngine {
 
     // 라운드별 설정 (1:10s, 2:8s, 3:7s, 4:7s, 5+:5s)
     const stageRule = DEFAULT_STAGE_RULES[Math.min(this.currentRoundNumber, 5)];
-    const timeLimit = this.settings.stageTimeLimits[this.currentRoundNumber] || stageRule.timeLimit;
+    const timeLimit = this.settings.questionTimeLimit || this.settings.stageTimeLimits[this.currentRoundNumber] || stageRule.timeLimit;
     const stageName = this.currentRoundNumber <= 5 ? stageRule.stageName : `결승 연장전 ${this.currentRoundNumber}라운드`;
 
     // 문제은행에서 승인된 미사용 문제 무작위 선정
@@ -473,7 +473,7 @@ export class GameEngine {
     this.activeQuiz = available[randomIndex];
     this.usedQuizIds.add(this.activeQuiz.id);
 
-    const timeLimit = 15; // 15초 제한시간 적용
+    const timeLimit = this.settings.questionTimeLimit || 15; // 설정된 제한시간 적용 (기본 15초)
     this.roundStartTime = Date.now();
     this.roundEndTime = this.roundStartTime + timeLimit * 1000;
 
@@ -756,8 +756,12 @@ export class GameEngine {
     this.emitForceLobby();
   }
 
-  // --- 1등 확정 / 무승부 시 대기실 즉시 복귀 (상태 무관 언제든 안전하게 복귀) ---
+  // --- 1등 확정 / 무승부 시 대기실 복귀 (GAME_OVER 상태는 관리자 제어 시에만 전환) ---
   public requestResetToLobby(): boolean {
+    if (this.status === 'GAME_OVER') {
+      console.log('[Notice] GAME_OVER 상태에서는 관리자가 새 게임을 시작하기 전까지 대기실로 자동 복귀하지 않고 결과를 유지합니다.');
+      return false;
+    }
     this.resetGame();
     return true;
   }
@@ -790,6 +794,11 @@ export class GameEngine {
 
   public getChatHistory(): ChatMessage[] {
     return this.chatHistory;
+  }
+
+  public clearChatHistory(): void {
+    this.chatHistory = [];
+    console.log('[GameEngine] Chat history cleared');
   }
 
   public updateSettings(newSettings: Partial<GameSettings>) {

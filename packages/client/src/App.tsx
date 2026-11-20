@@ -18,6 +18,7 @@ export default function App() {
       isSoundEnabled: true,
       bgmEnabled: true,
       autoProgress: true,
+      questionTimeLimit: 15,
       stageTimeLimits: { 1: 15, 2: 15, 3: 15, 4: 15, 5: 15 },
       selectedCategories: [...ALL_QUIZ_CATEGORIES]
     }

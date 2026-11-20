@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS = {
   isSoundEnabled: true,
   bgmEnabled: true,
   autoProgress: true,
+  questionTimeLimit: 15,
   stageTimeLimits: {
     1: 15,
     2: 15,
