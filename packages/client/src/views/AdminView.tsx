@@ -233,6 +233,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     }
   };
 
+  const handleRegenerateQr = () => {
+    if (confirm('대기실 접속 QR 코드를 새로운 세션으로 갱신하시겠습니까?\n(TV 전광판의 QR 코드가 즉시 새로고침 없이 갱신됩니다)')) {
+      socket.emit('admin:regenerate_qr', (res) => {
+        if (res?.success) {
+          alert('새 QR 코드가 발급되었습니다.');
+        } else {
+          alert('QR 코드 갱신에 실패했습니다.');
+        }
+      });
+    }
+  };
+
   // 카테고리 선택 제어 로직
   const currentSelectedCategories = gameState.settings.selectedCategories && gameState.settings.selectedCategories.length > 0
     ? gameState.settings.selectedCategories
@@ -883,6 +895,26 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
               }}
             >
               🏠 전원 대기실
+            </button>
+            <button
+              onClick={handleRegenerateQr}
+              style={{
+                minHeight: '48px',
+                padding: '10px 8px',
+                background: '#0d9488',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.88rem' : '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                wordBreak: 'keep-all',
+                boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)'
+              }}
+              title="대기실 접속 QR 코드를 새로운 세션으로 갱신하여 TV 전광판 화면에 즉시 재렌더링합니다"
+            >
+              🔄 대기실 QR 갱신
             </button>
             <button
               onClick={handleReset}

@@ -40,6 +40,7 @@ export class GameEngine {
   private gameStartedAt?: number;
   private gameEndedAt?: number;
   private lastRoundResult?: RoundResult;
+  private qrSessionToken: string = '';
 
   // 이벤트 콜백 함수들
   private emitStateSync: (state: GameState) => void;
@@ -956,8 +957,15 @@ export class GameEngine {
       lastRoundResult: this.lastRoundResult,
       settings: this.settings,
       gameStartedAt: this.gameStartedAt,
-      gameEndedAt: this.gameEndedAt
+      gameEndedAt: this.gameEndedAt,
+      qrSessionToken: this.qrSessionToken || undefined
     };
+  }
+
+  public regenerateQrSession(): string {
+    this.qrSessionToken = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+    this.syncState();
+    return this.qrSessionToken;
   }
 
   public syncState() {

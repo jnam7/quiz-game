@@ -111,6 +111,7 @@ export interface GameState {
   settings: GameSettings;
   gameStartedAt?: number;
   gameEndedAt?: number;
+  qrSessionToken?: string; // 대기실 실시간 QR 세션 식별 토큰
 }
 
 export interface ChatMessage {
@@ -165,6 +166,7 @@ export interface ClientToServerEvents {
   'admin:reset_game': () => void;
   'admin:clear_all_players': (callback?: (res: { success: boolean }) => void) => void;
   'admin:move_to_lobby': (callback?: (res: { success: boolean }) => void) => void;
+  'admin:regenerate_qr': (callback?: (res: { success: boolean; sessionToken: string }) => void) => void;
   'admin:chat_clear': (callback?: (res: { success: boolean }) => void) => void;
   'admin:update_settings': (settings: Partial<GameSettings>) => void;
   'admin:quiz:add': (quiz: Omit<QuizItem, 'id'>, callback: (res: { success: boolean; quiz?: QuizItem }) => void) => void;
@@ -198,6 +200,7 @@ export interface ServerToClientEvents {
   'chat:message': (chat: ChatMessage) => void;
   'chat:history': (messages: ChatMessage[]) => void;
   'chat:cleared': () => void;
+  'game:qr_updated': (data: { sessionToken: string; timestamp: number }) => void;
   'server:tunnel_updated': (url: string) => void;
   'error:message': (message: string) => void;
 }

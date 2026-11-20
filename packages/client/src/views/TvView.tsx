@@ -58,6 +58,49 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [ttsEnabled, setTtsEnabled] = useState(true); // TV Web Speech API (TTS) 낭독 활성화
   const [voicesLoaded, setVoicesLoaded] = useState(false); // 브라우저 비동기 음성 목록 로딩 완료 여부
 
+  // 대기실 QR 코드 세션 식별 토큰 (실시간 갱신용)
+  const [qrSession, setQrSession] = useState<string>(gameState.qrSessionToken || '');
+
+  useEffect(() => {
+    if (gameState.qrSessionToken) {
+      setQrSession(gameState.qrSessionToken);
+    }
+  }, [gameState.qrSessionToken]);
+
+  // 문제 풀이 BGM (/bgm.mp4) 오디오 제어
+  const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [bgmVolume, setBgmVolume] = useState<number>(0.5); // 0.0 ~ 1.0 (기본 50%)
+  const [bgmMuted, setBgmMuted] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (bgmAudioRef.current) {
+      bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+      bgmAudioRef.current.muted = bgmMuted;
+    }
+  }, [bgmVolume, bgmMuted]);
+
+  // 문제 풀이 타이머 시작 시 BGM 자동 재생 / 라운드 종료 시 즉시 정지 및 되감기
+  useEffect(() => {
+    if (gameState.status === 'IN_ROUND') {
+      if (bgmAudioRef.current) {
+        bgmAudioRef.current.currentTime = 0;
+        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+        bgmAudioRef.current.muted = bgmMuted;
+        const playPromise = bgmAudioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.log('[BGM] 자동 재생 일시 대기 (브라우저 상호작용 필요 등):', err);
+          });
+        }
+      }
+    } else {
+      if (bgmAudioRef.current) {
+        bgmAudioRef.current.pause();
+        bgmAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [gameState.status]);
+
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const tvChatScrollRef = useRef<HTMLDivElement>(null);
@@ -75,9 +118,13 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         .then(res => res.json())
         .then(info => {
           setServerInfo(info);
-          const targetUrl = (connectionMode === 'public' && info.publicUrl)
+          let targetUrl = (connectionMode === 'public' && info.publicUrl)
             ? info.publicUrl
             : `http://${info.localIp}:${info.clientPort}`;
+
+          if (qrSession) {
+            targetUrl += (targetUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+          }
 
           setJoinUrlText(targetUrl);
           QRCode.toDataURL(targetUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
@@ -85,7 +132,10 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             .catch(err => console.error(err));
         })
         .catch(() => {
-          const fallbackUrl = window.location.origin;
+          let fallbackUrl = window.location.origin;
+          if (qrSession) {
+            fallbackUrl += (fallbackUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+          }
           setJoinUrlText(fallbackUrl);
           QRCode.toDataURL(fallbackUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
             .then(url => setQrCodeUrl(url));
@@ -99,7 +149,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [connectionMode]);
+  }, [connectionMode, qrSession]);
 
   // 소켓 이벤트
   useEffect(() => {
@@ -165,6 +215,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       setCountdown(null);
     };
 
+    const handleQrUpdated = (data: { sessionToken: string; timestamp: number }) => {
+      console.log('[TV] 대기실 QR 갱신 이벤트 수신:', data.sessionToken);
+      setQrSession(data.sessionToken);
+    };
+
     socket.on('game:round_started', handleRoundStart);
     socket.on('game:round_ended', handleRoundEnd);
     socket.on('player:answered', handleAnswered);
@@ -175,6 +230,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     socket.on('chat:history', handleChatHistory);
     socket.on('chat:cleared', handleChatCleared);
     socket.on('server:tunnel_updated', handleTunnelUpdated);
+    socket.on('game:qr_updated', handleQrUpdated);
     socket.on('game:force_lobby', handleForceLobby);
 
     return () => {
@@ -188,6 +244,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
       socket.off('chat:history', handleChatHistory);
       socket.off('chat:cleared', handleChatCleared);
       socket.off('server:tunnel_updated', handleTunnelUpdated);
+      socket.off('game:qr_updated', handleQrUpdated);
       socket.off('game:force_lobby', handleForceLobby);
     };
   }, []);
@@ -565,7 +622,61 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               {gameState.players.length - survivors.length} <span style={{ fontSize: '0.9rem' }}>명</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* 문제 풀이 BGM 오디오 엘리먼트 (/bgm.mp4) */}
+            <audio ref={bgmAudioRef} src="/bgm.mp4" loop preload="auto" />
+
+            {/* BGM 볼륨 슬라이더 및 음소거 토글 */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(30, 41, 59, 0.85)',
+                border: '1px solid #475569',
+                borderRadius: '8px',
+                padding: '4px 10px'
+              }}
+              title="문제 풀이 시간 BGM 볼륨 조절"
+            >
+              <button
+                onClick={() => setBgmMuted(prev => !prev)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: bgmMuted ? '#94a3b8' : '#38bdf8',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '2px 4px'
+                }}
+                title={bgmMuted ? 'BGM 음소거 해제' : 'BGM 음소거'}
+              >
+                {bgmMuted ? '🔇 BGM OFF' : '🎵 BGM ON'}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={bgmMuted ? 0 : bgmVolume}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setBgmVolume(val);
+                  if (bgmMuted && val > 0) setBgmMuted(false);
+                }}
+                style={{
+                  width: isMobile ? '55px' : '75px',
+                  height: '4px',
+                  cursor: 'pointer',
+                  accentColor: '#38bdf8'
+                }}
+              />
+              <span style={{ fontSize: '0.72rem', color: '#cbd5e1', minWidth: '28px', textAlign: 'right' }}>
+                {bgmMuted ? '0%' : `${Math.round(bgmVolume * 100)}%`}
+              </span>
+            </div>
+
             <button
               onClick={() => setTtsEnabled(prev => !prev)}
               style={{
@@ -696,7 +807,17 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
                     display: 'inline-block'
                   }}
                 >
-                  <img src={qrCodeUrl} alt="QR Code" style={{ width: isMobile ? '180px' : '250px', height: isMobile ? '180px' : '250px', display: 'block' }} />
+                  <img
+                    key={qrCodeUrl}
+                    src={qrCodeUrl}
+                    alt="QR Code"
+                    style={{
+                      width: isMobile ? '180px' : '250px',
+                      height: isMobile ? '180px' : '250px',
+                      display: 'block',
+                      animation: 'optionsReveal 0.4s ease-out'
+                    }}
+                  />
                 </div>
                 {joinUrlText && (
                   <div style={{ fontSize: isMobile ? '0.82rem' : '0.95rem', color: '#38bdf8', fontWeight: 'bold', wordBreak: 'break-all', maxWidth: isMobile ? '240px' : '300px', margin: '0 auto' }}>

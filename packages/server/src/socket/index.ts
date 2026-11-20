@@ -256,6 +256,22 @@ export function setupSocketHandlers(
       }
     });
 
+    // 4-2. 관리자 대기실 QR 코드 실시간 갱신 요청
+    socket.on('admin:regenerate_qr', (callback) => {
+      try {
+        const sessionToken = gameEngine.regenerateQrSession();
+        io.to(SOCKET_ROOM_MAIN).emit('game:qr_updated', {
+          sessionToken,
+          timestamp: Date.now()
+        });
+        console.log(`[Admin] Lobby QR code regenerated: session=${sessionToken}`);
+        if (callback) callback({ success: true, sessionToken });
+      } catch (err) {
+        console.error('[admin:regenerate_qr Error]:', err);
+        if (callback) callback({ success: false, sessionToken: '' });
+      }
+    });
+
     socket.on('admin:chat_clear', (callback) => {
       try {
         gameEngine.clearChatHistory();
