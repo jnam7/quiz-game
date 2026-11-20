@@ -73,6 +73,18 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const [bgmMuted, setBgmMuted] = useState<boolean>(false);
 
   useEffect(() => {
+    if (gameState.settings.bgmVolume !== undefined) {
+      setBgmVolume(gameState.settings.bgmVolume);
+    }
+    if (gameState.settings.bgmEnabled !== undefined) {
+      setBgmMuted(!gameState.settings.bgmEnabled);
+    }
+    if (gameState.settings.tickVolume !== undefined) {
+      soundEngine.setTickVolume(gameState.settings.tickVolume);
+    }
+  }, [gameState.settings.bgmVolume, gameState.settings.bgmEnabled, gameState.settings.tickVolume]);
+
+  useEffect(() => {
     if (bgmAudioRef.current) {
       bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
       bgmAudioRef.current.muted = bgmMuted;

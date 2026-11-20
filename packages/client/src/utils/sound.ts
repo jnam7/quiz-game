@@ -8,6 +8,7 @@ class SoundEngine {
   private isDecodingClock: boolean = false;
   private html5TickAudio: HTMLAudioElement | null = null;
   private html5TimeoutAudio: HTMLAudioElement | null = null;
+  private tickVolume: number = 1.0;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -58,6 +59,10 @@ class SoundEngine {
 
   public setEnabled(enabled: boolean) {
     this.isEnabled = enabled;
+  }
+
+  public setTickVolume(volume: number) {
+    this.tickVolume = Math.max(0, Math.min(2, volume));
   }
 
   public play(type: SoundEffectType) {
@@ -115,7 +120,7 @@ class SoundEngine {
 
         // 행사장 스피커에서도 쩌렁쩌렁하게 들리도록 게인 2.5배 증폭
         const gainNode = this.ctx.createGain();
-        gainNode.gain.setValueAtTime(2.5, this.ctx.currentTime);
+        gainNode.gain.setValueAtTime(2.5 * this.tickVolume, this.ctx.currentTime);
 
         source.connect(gainNode);
         gainNode.connect(this.ctx.destination);
@@ -130,7 +135,7 @@ class SoundEngine {
     if (this.html5TickAudio) {
       try {
         this.html5TickAudio.currentTime = 0;
-        this.html5TickAudio.volume = 1.0;
+        this.html5TickAudio.volume = Math.max(0, Math.min(1, this.tickVolume));
         const p = this.html5TickAudio.play();
         if (p) p.catch(() => {});
         return;
@@ -139,7 +144,7 @@ class SoundEngine {
 
     try {
       const audio = new Audio('/tick.wav');
-      audio.volume = 1.0;
+      audio.volume = Math.max(0, Math.min(1, this.tickVolume));
       audio.play().catch(() => {});
     } catch {}
   }

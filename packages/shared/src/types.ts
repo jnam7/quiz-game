@@ -86,6 +86,8 @@ export interface GameSettings {
   questionTimeLimit?: number; // 문제 풀이 제한 시간 (10 | 15 | 20 | 25초, 기본값: 15초)
   selectedCategories?: QuizCategory[]; // 출제할 문제 카테고리 필터
   qrMode?: 'WIFI' | 'EXTERNAL'; // 대기실 접속 QR 코드 모드 ('WIFI': 사내 로컬망, 'EXTERNAL': 공인/LTE)
+  bgmVolume?: number; // BGM 볼륨 (0.0 ~ 1.0)
+  tickVolume?: number; // 초침 볼륨 (0.0 ~ 1.0)
 }
 
 export interface RankedPlayer {

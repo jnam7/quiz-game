@@ -39,7 +39,9 @@ export const DEFAULT_SETTINGS = {
     5: 15
   },
   selectedCategories: [...ALL_QUIZ_CATEGORIES],
-  qrMode: 'EXTERNAL' as const
+  qrMode: 'EXTERNAL' as const,
+  bgmVolume: 1.0,
+  tickVolume: 1.0
 };
 
 export const ADMIN_PASSWORD = (typeof process !== 'undefined' && process.env?.ADMIN_PASSWORD) || 'admin123'; // 관리자 기본 비밀번호
