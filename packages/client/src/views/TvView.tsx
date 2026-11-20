@@ -250,6 +250,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     };
   }, []);
 
+  // 사운드 엔진 프리로드 및 초기화
+  useEffect(() => {
+    soundEngine.enable();
+  }, []);
+
   // 대기실 복귀 시 이전 라운드/카운트다운 데이터 완전 초기화
   useEffect(() => {
     if (gameState.status === 'WAITING') {
@@ -378,7 +383,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             soundEngine.play('TIMEOUT');
           }
         }
-      }, 200);
+      }, 50); // 50ms 주기로 초 단위 전환을 오차 없이 감지하여 정확한 1초 간격 동기화
       return () => clearInterval(interval);
     } else {
       lastTickSecondRef.current = null;

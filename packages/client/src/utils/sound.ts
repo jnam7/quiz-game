@@ -1,19 +1,53 @@
 import { SoundEffectType } from '@quiz/shared';
+import { CLOCK_TICK_WAV_BASE64 } from './clockSounds';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private isEnabled: boolean = true;
-  private bgmOscillator: OscillatorNode | null = null;
-  private isBgmPlaying: boolean = false;
-  private clockTickToggle: boolean = false; // Tick(3초,1초) - Tock(2초) 아날로그 교차 플래그
+  private clockTickBuffer: AudioBuffer | null = null;
+  private isDecodingClock: boolean = false;
+  private html5TickAudio: HTMLAudioElement | null = null;
+  private html5TimeoutAudio: HTMLAudioElement | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        this.html5TickAudio = new Audio(CLOCK_TICK_WAV_BASE64);
+        this.html5TickAudio.preload = 'auto';
+        this.html5TimeoutAudio = new Audio('/timeout_bell.mp3');
+        this.html5TimeoutAudio.preload = 'auto';
+      } catch {
+        // SSR / 브라우저 정책 방어
+      }
+    }
+  }
 
   private initContext() {
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
     }
-    if (this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
+    }
+    if (this.ctx && !this.clockTickBuffer && !this.isDecodingClock) {
+      this.preloadClockBuffer();
+    }
+  }
+
+  private async preloadClockBuffer() {
+    if (!this.ctx || this.isDecodingClock) return;
+    this.isDecodingClock = true;
+    try {
+      const res = await fetch(CLOCK_TICK_WAV_BASE64);
+      const arrayBuf = await res.arrayBuffer();
+      this.clockTickBuffer = await this.ctx.decodeAudioData(arrayBuf);
+    } catch {
+      // AudioBuffer 디코딩 실패 시 html5TickAudio로 자동 폴백
+    } finally {
+      this.isDecodingClock = false;
     }
   }
 
@@ -29,7 +63,6 @@ class SoundEngine {
   public play(type: SoundEffectType) {
     if (!this.isEnabled) return;
     this.initContext();
-    if (!this.ctx) return;
 
     switch (type) {
       case 'COUNTDOWN_TICK':
@@ -37,13 +70,13 @@ class SoundEngine {
         break;
 
       case 'COUNTDOWN_URGENT':
-        // 고출력 아날로그 시계 묵직한 초침(Tick-Tock) 둔탁한 타격음 합성 (기존 비프음 대체)
-        this.playAnalogClockTick();
+        // 실제 아날로그 괘종시계/초침 '째-깍' 고출력 무지연 사운드 재생
+        this.playMechanicalClockTick();
         break;
 
       case 'TIMEOUT':
-        // 확실하고 묵직한 마감 경고음
-        this.playTimeoutAlarm();
+        // 칼같이 종료되는 마감 공/종소리 사운드 재생
+        this.playTimeoutGong();
         break;
 
       case 'CORRECT':
@@ -70,6 +103,85 @@ class SoundEngine {
         this.playFanfare();
         break;
     }
+  }
+
+  // 진짜 아날로그 시계 째-깍(Tick-Tock) 고품질 사운드 재생 (최대 음량 확보)
+  private playMechanicalClockTick() {
+    // 1. Web Audio API AudioBuffer 기반 무지연/고출력 증폭 재생
+    if (this.ctx && this.clockTickBuffer) {
+      try {
+        const source = this.ctx.createBufferSource();
+        source.buffer = this.clockTickBuffer;
+
+        // 행사장 스피커에서도 쩌렁쩌렁하게 들리도록 게인 2.5배 증폭
+        const gainNode = this.ctx.createGain();
+        gainNode.gain.setValueAtTime(2.5, this.ctx.currentTime);
+
+        source.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
+        source.start(0);
+        return;
+      } catch (err) {
+        console.warn('[SoundEngine] Web Audio tick play error, fallback to HTML5 Audio:', err);
+      }
+    }
+
+    // 2. Fallback: Base64 / Static 오디오 엘리먼트 즉시 재생
+    if (this.html5TickAudio) {
+      try {
+        this.html5TickAudio.currentTime = 0;
+        this.html5TickAudio.volume = 1.0;
+        const p = this.html5TickAudio.play();
+        if (p) p.catch(() => {});
+        return;
+      } catch {}
+    }
+
+    try {
+      const audio = new Audio('/tick.wav');
+      audio.volume = 1.0;
+      audio.play().catch(() => {});
+    } catch {}
+  }
+
+  // 0초 타임오버 칼같은 마감 공/종소리 사운드 재생
+  private playTimeoutGong() {
+    // 1. 실제 마감 공/종소리 오디오 파일 재생
+    if (this.html5TimeoutAudio) {
+      try {
+        this.html5TimeoutAudio.currentTime = 0;
+        this.html5TimeoutAudio.volume = 1.0;
+        const p = this.html5TimeoutAudio.play();
+        if (p) p.catch(() => {});
+      } catch {}
+    } else {
+      try {
+        const audio = new Audio('/timeout_bell.mp3');
+        audio.volume = 1.0;
+        audio.play().catch(() => {});
+      } catch {}
+    }
+
+    // 2. Web Audio API로 맑고 웅장한 마감 공/벨 화음 결합 (청명한 울림)
+    if (!this.ctx) return;
+    try {
+      const now = this.ctx.currentTime;
+      [587.33, 880, 1174.66].forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        const vol = 0.4 / (idx + 1);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx!.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      });
+    } catch {}
   }
 
   private playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume: number = 0.1) {
@@ -111,107 +223,6 @@ class SoundEngine {
       offset += n.d * 1000 + 50;
     });
   }
-
-  // 고출력 아날로그 시계 묵직한 초침(Tick-Tock) 소리 합성 (낮은 주파수의 둔탁한 타격음 파형)
-  private playAnalogClockTick() {
-    if (!this.ctx) return;
-    try {
-      const now = this.ctx.currentTime;
-      const isTock = this.clockTickToggle;
-      this.clockTickToggle = !this.clockTickToggle;
-
-      // 마스터 게인 노드 (볼륨 크게 증폭: BGM 위로 선명하게 전달)
-      const masterGain = this.ctx.createGain();
-      masterGain.gain.setValueAtTime(0.95, now);
-      masterGain.connect(this.ctx.destination);
-
-      // 1. Sharp mechanical transient click (기계식 톱니 맞물림 찰나의 스냅)
-      const clickOsc = this.ctx.createOscillator();
-      const clickGain = this.ctx.createGain();
-      clickOsc.type = 'triangle';
-      clickOsc.frequency.setValueAtTime(isTock ? 1200 : 1600, now);
-      clickOsc.frequency.exponentialRampToValueAtTime(300, now + 0.018);
-
-      clickGain.gain.setValueAtTime(0.8, now);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.022);
-
-      clickOsc.connect(clickGain);
-      clickGain.connect(masterGain);
-      clickOsc.start(now);
-      clickOsc.stop(now + 0.025);
-
-      // 2. Heavy analog body thud (낮은 주파수 250Hz->55Hz 급격한 Gain 감쇄 둔탁한 타격음)
-      const bodyOsc = this.ctx.createOscillator();
-      const bodyGain = this.ctx.createGain();
-      bodyOsc.type = 'sine';
-      const startFreq = isTock ? 190 : 250;
-      const endFreq = isTock ? 40 : 55;
-      bodyOsc.frequency.setValueAtTime(startFreq, now);
-      bodyOsc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.065);
-
-      bodyGain.gain.setValueAtTime(1.0, now);
-      bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
-
-      bodyOsc.connect(bodyGain);
-      bodyGain.connect(masterGain);
-      bodyOsc.start(now);
-      bodyOsc.stop(now + 0.08);
-
-      // 3. Crisp mechanical texture noise burst (아날로그 시계 특유의 기계음 질감)
-      const bufferSize = Math.floor(this.ctx.sampleRate * 0.025);
-      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.004));
-      }
-      const noise = this.ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      const noiseFilter = this.ctx.createBiquadFilter();
-      noiseFilter.type = 'bandpass';
-      noiseFilter.frequency.setValueAtTime(isTock ? 1400 : 1800, now);
-      noiseFilter.Q.setValueAtTime(2.0, now);
-
-      const noiseGain = this.ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.5, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
-
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(masterGain);
-      noise.start(now);
-      noise.stop(now + 0.03);
-    } catch {
-      // AudioContext 재생 정책 예외 무시
-    }
-  }
-
-  // 0초 타임오버 확실한 마감 경고음
-  private playTimeoutAlarm() {
-    if (!this.ctx) return;
-    try {
-      const now = this.ctx.currentTime;
-      [180, 270].forEach((freq) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now);
-        osc.frequency.linearRampToValueAtTime(freq * 0.85, now + 0.65);
-
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.setValueAtTime(0.4, now + 0.5);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
-        osc.start(now);
-        osc.stop(now + 0.7);
-      });
-    } catch {
-      // AudioContext 재생 정책 예외 무시
-    }
-  }
 }
 
 export const soundEngine = new SoundEngine();
-
