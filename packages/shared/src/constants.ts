@@ -1,6 +1,6 @@
 import { QuizCategory } from './types';
 
-export const MAX_PLAYERS = 150;
+export const MAX_PLAYERS = 300;
 
 export const ALL_QUIZ_CATEGORIES: QuizCategory[] = [
   '일반 상식',
@@ -26,7 +26,7 @@ export const DEFAULT_STAGE_RULES: { [round: number]: { timeLimit: number; stageN
 };
 
 export const DEFAULT_SETTINGS = {
-  maxPlayers: 150,
+  maxPlayers: 300,
   isSoundEnabled: true,
   bgmEnabled: true,
   autoProgress: true,

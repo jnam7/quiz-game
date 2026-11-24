@@ -8,8 +8,8 @@ import fs from 'fs';
 import events from 'events';
 import { spawn, ChildProcess } from 'child_process';
 
-// 150인 이상 동시 접속 시 리스너 초과 경고 방지 및 메모리 보호
-events.EventEmitter.defaultMaxListeners = 250;
+// 300인 이상 동시 접속 시 리스너 초과 경고 방지 및 메모리 보호
+events.EventEmitter.defaultMaxListeners = 500;
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -60,7 +60,7 @@ if (fs.existsSync(clientDistPath)) {
 const database = new JsonDatabase();
 const httpServer = http.createServer(app);
 
-// 고신뢰성 Socket.io 설정 (150인 동시 접속 최적화 & 초고속 브로드캐스트 & 모바일 네트워크 순단 방지)
+// 고신뢰성 Socket.io 설정 (300인 동시 접속 최적화 & 초고속 브로드캐스트 & 모바일 네트워크 순단 방지)
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: '*',
@@ -70,7 +70,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   pingInterval: 25000,
   connectTimeout: 45000,
   maxHttpBufferSize: 2e7,
-  perMessageDeflate: false, // 150인 동시 브로드캐스트 시 CPU 압축 오버헤드 원천 제거
+  perMessageDeflate: false, // 300인 동시 브로드캐스트 시 CPU 압축 오버헤드 원천 제거
   allowEIO3: true
 });
 
@@ -192,10 +192,10 @@ app.get('*', (req, res, next) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CMB 150인 서바이벌 퀴즈</title>
+  <title>서바이벌 퀴즈쇼</title>
 </head>
 <body style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: white;">
-  <h1>CMB 서바이벌 퀴즈 서버 정상 가동 중</h1>
+  <h1>서바이벌 퀴즈쇼 서버 정상 가동 중</h1>
   <p>클라이언트 dist 빌드가 진행 중이거나 준비되지 않았습니다. 잠시 후 새로고침해 주세요.</p>
 </body>
 </html>`);
@@ -314,7 +314,7 @@ process.on('SIGTERM', () => {
 httpServer.listen(port, '0.0.0.0', () => {
   const localIp = getLocalNetworkIp();
   console.log(`=======================================================`);
-  console.log(`🚀 [CMB 150인 서바이벌 퀴즈 서버 - ${isProduction ? 'Render 프로덕션 배포 모드' : '로컬 개발 모드'} 가동]`);
+  console.log(`🚀 [서바이벌 퀴즈쇼 서버 - ${isProduction ? 'Render 프로덕션 배포 모드' : '로컬 개발 모드'} 가동]`);
   console.log(`📡 포트: ${port}`);
   console.log(`🖥️ 대형 TV 화면:    http://localhost:${port}/tv`);
   console.log(`🛠️ 관리자 대시보드:  http://localhost:${port}/admin`);

@@ -276,7 +276,7 @@ export class GameEngine {
       const answeredCount = survivors.filter(p => p.selectedAnswer !== undefined).length;
 
       this.emitPlayerAnswered(player.token, answeredCount, survivors.length);
-      // 150명 동시 제출 시 CPU/네트워크 병목 방지: 경량 emitPlayerAnswered로 알림 처리
+      // 300명 동시 제출 시 CPU/네트워크 병목 방지: 경량 emitPlayerAnswered로 알림 처리
 
       // 모든 참여자가 제한시간 전에 답변을 마쳤을 경우 즉시 라운드 마감 및 정답 확인
       const onlineSurvivors = survivors.filter(p => p.isOnline);
@@ -899,8 +899,8 @@ export class GameEngine {
     return Array.from(this.players.values()).filter(p => p.isAlive);
   }
 
-  // --- 최종 1~150등 등수 계산 (생존 여부, 점수, 탈락 라운드 종합) ---
-  public calculateTopRankings(limit: number = 150): RankedPlayer[] {
+  // --- 최종 1~300등 등수 계산 (생존 여부, 점수, 탈락 라운드 종합) ---
+  public calculateTopRankings(limit: number = 300): RankedPlayer[] {
     const sorted = Array.from(this.players.values()).sort((a, b) => {
       // 1. 생존자 우선
       if (a.isAlive && !b.isAlive) return -1;

@@ -14,7 +14,7 @@ export default function App() {
     players: [],
     survivors: [],
     settings: {
-      maxPlayers: 150,
+      maxPlayers: 300,
       isSoundEnabled: true,
       bgmEnabled: true,
       autoProgress: true,
@@ -27,6 +27,7 @@ export default function App() {
   const [path, setPath] = useState(window.location.pathname);
 
   useEffect(() => {
+    document.title = '서바이벌 퀴즈쇼';
     socket.connect();
 
     socket.on('game:state_sync', (state) => {

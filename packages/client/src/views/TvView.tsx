@@ -716,7 +716,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               boxShadow: '0 0 25px rgba(168, 85, 247, 0.5)'
             }}
           >
-            {roundInfo?.stageName || 'CMB 150인 서바이벌 퀴즈쇼'}
+            {roundInfo?.stageName || '서바이벌 퀴즈쇼'}
           </div>
           <div style={{ fontSize: isMobile ? '0.95rem' : '1.1rem', color: '#94a3b8' }}>
             {roundInfo?.category && `[카테고리: ${roundInfo.category}]`}
@@ -872,7 +872,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             {gameState.status === 'WAITING' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px 0' : '0' }}>
           <h1 style={{ fontSize: isMobile ? '1.6rem' : '3.2rem', fontWeight: 900, color: '#818cf8', marginBottom: '8px', textAlign: 'center', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)', wordBreak: 'keep-all' }}>
-            🔥 CMB 150인 서바이벌 퀴즈 대기실 🔥
+            🔥 서바이벌 퀴즈쇼 대기실 🔥
           </h1>
           <p style={{ fontSize: isMobile ? '0.95rem' : '1.4rem', color: '#cbd5e1', marginBottom: isMobile ? '14px' : '20px', textAlign: 'center', wordBreak: 'keep-all' }}>
             스마트폰 카메라로 아래 QR코드를 스캔하여 지금 즉시 접속하세요!
@@ -937,13 +937,13 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
 
             <div style={{ minWidth: isMobile ? '100%' : '340px', textAlign: isMobile ? 'center' : 'left' }}>
               <div style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', marginBottom: '8px' }}>
-                현재 입장 인원: <strong style={{ color: '#38bdf8', fontSize: isMobile ? '1.5rem' : '1.8rem' }}>{gameState.players.length}</strong> / 150명
+                현재 입장 인원: <strong style={{ color: '#38bdf8', fontSize: isMobile ? '1.5rem' : '1.8rem' }}>{gameState.players.length}</strong> / {gameState.settings.maxPlayers || 300}명
               </div>
               <div style={{ height: '10px', background: '#334155', borderRadius: '5px', overflow: 'hidden', marginBottom: '16px' }}>
                 <div
                   style={{
                     height: '100%',
-                    width: `${Math.min((gameState.players.length / 150) * 100, 100)}%`,
+                    width: `${Math.min((gameState.players.length / (gameState.settings.maxPlayers || 300)) * 100, 100)}%`,
                     background: 'linear-gradient(90deg, #6366f1, #ec4899)'
                   }}
                 />

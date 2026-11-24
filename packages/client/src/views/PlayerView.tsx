@@ -415,7 +415,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         <div style={{ padding: '20px 0', width: '100%' }}>
           <div style={{ fontSize: '3.2rem', marginBottom: '8px' }}>🔥</div>
           <h1 style={{ fontSize: '1.75rem', color: '#818cf8', fontWeight: 900, marginBottom: '8px', wordBreak: 'keep-all' }}>
-            CMB 150인 서바이벌 퀴즈쇼
+            서바이벌 퀴즈쇼
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '28px', wordBreak: 'keep-all' }}>
             틀리면 즉시 탈락! 최후의 1인에 도전하세요.
@@ -464,7 +464,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
           </form>
 
           <div style={{ marginTop: '36px', color: '#64748b', fontSize: '0.9rem' }}>
-            현재 대기 인원: <strong style={{ color: '#38bdf8' }}>{gameState.players.length}</strong> / 150명
+            현재 대기 인원: <strong style={{ color: '#38bdf8' }}>{gameState.players.length}</strong> / {gameState.settings.maxPlayers || 300}명
           </div>
 
           <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #1e293b' }}>
@@ -596,7 +596,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
         {isWinner ? (
           <div style={{ background: 'rgba(234, 179, 8, 0.2)', border: '2px solid #eab308', borderRadius: '14px', padding: '16px', marginBottom: '16px', maxWidth: '450px', width: '100%', boxSizing: 'border-box' }}>
             <p style={{ fontSize: '1.1rem', color: '#fef08a', fontWeight: 800 }}>
-              축하합니다! CMB 150인 서바이벌 최후의 승자입니다!
+              축하합니다! 서바이벌 퀴즈쇼 최후의 승자입니다!
             </p>
             <div style={{ marginTop: '8px', color: '#fde047', fontSize: '1.2rem', fontWeight: 800 }}>
               점수: {player.score}점

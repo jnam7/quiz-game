@@ -363,6 +363,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     socket.emit('admin:update_settings', { questionTimeLimit: sec });
   };
 
+  const handleUpdateMaxPlayers = (max: number) => {
+    socket.emit('admin:update_settings', { maxPlayers: max });
+  };
+
   const handleAddQuiz = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuiz.question.trim() || newQuiz.options.some(o => !o.trim())) {
@@ -514,7 +518,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             관리자 대시보드 로그인
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '24px' }}>
-            CMB 150인 서바이벌 퀴즈 행사 총괄 센터
+            서바이벌 퀴즈쇼 행사 총괄 센터
           </p>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
             <input
@@ -1151,6 +1155,63 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                     }}
                   >
                     {sec}초 {isSelected && '✓'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 👥 최대 참가 가능 정원 설정 (10명 ~ 500명, 기본 300명) */}
+          <div style={{ background: '#0f172a', padding: '14px', borderRadius: '14px', border: '1px solid #334155', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#38bdf8' }}>
+                👥 최대 참가 가능 정원 설정
+              </span>
+              <span style={{ fontSize: '0.78rem', color: '#4ade80', background: 'rgba(74, 222, 128, 0.15)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                현재 정원: {gameState.settings.maxPlayers || 300}명
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+              <input
+                type="range"
+                min={10}
+                max={500}
+                step={10}
+                value={gameState.settings.maxPlayers || 300}
+                onChange={(e) => handleUpdateMaxPlayers(Number(e.target.value))}
+                style={{ flex: 1, accentColor: '#4f46e5', cursor: 'pointer' }}
+              />
+              <input
+                type="number"
+                min={10}
+                max={500}
+                step={10}
+                value={gameState.settings.maxPlayers || 300}
+                onChange={(e) => handleUpdateMaxPlayers(Math.max(10, Math.min(500, Number(e.target.value))))}
+                style={{ width: '75px', padding: '6px 8px', background: '#1e293b', border: '1px solid #475569', borderRadius: '8px', color: 'white', textAlign: 'center', fontSize: '0.9rem', fontWeight: 800 }}
+              />
+              <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>명</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {[50, 100, 200, 300].map((count) => {
+                const isSelected = (gameState.settings.maxPlayers || 300) === count;
+                return (
+                  <button
+                    key={count}
+                    type="button"
+                    onClick={() => handleUpdateMaxPlayers(count)}
+                    style={{
+                      minHeight: '38px',
+                      background: isSelected ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#1e293b',
+                      border: isSelected ? '2px solid #818cf8' : '1px solid #334155',
+                      borderRadius: '8px',
+                      color: isSelected ? '#ffffff' : '#cbd5e1',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {count}명 {isSelected && '✓'}
                   </button>
                 );
               })}
