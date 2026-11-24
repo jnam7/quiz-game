@@ -82,6 +82,8 @@ export interface GameSettings {
   maxPlayers: number;
   isSoundEnabled: boolean;
   bgmEnabled: boolean;
+  ttsEnabled?: boolean; // 문제 사전 낭독(TTS 음성) ON/OFF
+  isMuted?: boolean; // 전광판 BGM 음소거 여부
   autoProgress: boolean; // 다음 문제 자동 진행 여부
   stageTimeLimits: { [roundNumber: number]: number }; // 라운드별 기본 제한시간
   questionTimeLimit?: number; // 문제 풀이 제한 시간 (10 | 15 | 20 | 25초, 기본값: 15초)
@@ -172,6 +174,7 @@ export interface ClientToServerEvents {
   'admin:move_to_lobby': (callback?: (res: { success: boolean }) => void) => void;
   'admin:regenerate_qr': (callback?: (res: { success: boolean; sessionToken: string }) => void) => void;
   'admin:change_qr_mode': (data: { mode: 'WIFI' | 'EXTERNAL' }, callback?: (res: { success: boolean; mode: 'WIFI' | 'EXTERNAL' }) => void) => void;
+  'admin:change_audio_settings': (settings: { ttsEnabled?: boolean; bgmVolume?: number; isMuted?: boolean; bgmEnabled?: boolean; tickVolume?: number }, callback?: (res: { success: boolean }) => void) => void;
   'admin:chat_clear': (callback?: (res: { success: boolean }) => void) => void;
   'admin:update_settings': (settings: Partial<GameSettings>) => void;
   'admin:quiz:add': (quiz: Omit<QuizItem, 'id'>, callback: (res: { success: boolean; quiz?: QuizItem }) => void) => void;

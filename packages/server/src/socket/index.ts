@@ -297,9 +297,32 @@ export function setupSocketHandlers(
       }
     });
 
+    socket.on('admin:change_audio_settings', (audioSettings, callback) => {
+      try {
+        const updatePayload: any = { ...audioSettings };
+        if (audioSettings.isMuted !== undefined) {
+          updatePayload.bgmEnabled = !audioSettings.isMuted;
+          updatePayload.isMuted = audioSettings.isMuted;
+        } else if (audioSettings.bgmEnabled !== undefined) {
+          updatePayload.isMuted = !audioSettings.bgmEnabled;
+        }
+        gameEngine.updateSettings(updatePayload);
+        if (callback) callback({ success: true });
+      } catch (err) {
+        console.error('[admin:change_audio_settings Error]:', err);
+        if (callback) callback({ success: false });
+      }
+    });
+
     socket.on('admin:update_settings', (settings) => {
       try {
-        gameEngine.updateSettings(settings);
+        const updatePayload: any = { ...settings };
+        if (settings.isMuted !== undefined && settings.bgmEnabled === undefined) {
+          updatePayload.bgmEnabled = !settings.isMuted;
+        } else if (settings.bgmEnabled !== undefined && settings.isMuted === undefined) {
+          updatePayload.isMuted = !settings.bgmEnabled;
+        }
+        gameEngine.updateSettings(updatePayload);
       } catch (err) {
         console.error('[admin:update_settings Error]:', err);
       }

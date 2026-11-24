@@ -90,31 +90,51 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     return () => clearInterval(interval);
   }, [gameState.status, gameState.currentRoundInfo]);
 
-  // 전광판 사운드 제어 상태
+  // 전광판 사운드 및 연출 원격 제어 상태
   const [bgmVolume, setBgmVolume] = useState<number>(gameState.settings.bgmVolume ?? 1.0);
-  const [bgmEnabled, setBgmEnabled] = useState<boolean>(gameState.settings.bgmEnabled ?? true);
+  const [bgmEnabled, setBgmEnabled] = useState<boolean>(
+    gameState.settings.isMuted !== undefined ? !gameState.settings.isMuted : (gameState.settings.bgmEnabled ?? true)
+  );
+  const [ttsEnabled, setTtsEnabled] = useState<boolean>(gameState.settings.ttsEnabled ?? true);
   const [tickVolume, setTickVolume] = useState<number>(gameState.settings.tickVolume ?? 1.0);
 
   useEffect(() => {
     if (gameState.settings.bgmVolume !== undefined) setBgmVolume(gameState.settings.bgmVolume);
-    if (gameState.settings.bgmEnabled !== undefined) setBgmEnabled(gameState.settings.bgmEnabled);
+    if (gameState.settings.isMuted !== undefined) {
+      setBgmEnabled(!gameState.settings.isMuted);
+    } else if (gameState.settings.bgmEnabled !== undefined) {
+      setBgmEnabled(gameState.settings.bgmEnabled);
+    }
+    if (gameState.settings.ttsEnabled !== undefined) setTtsEnabled(gameState.settings.ttsEnabled);
     if (gameState.settings.tickVolume !== undefined) setTickVolume(gameState.settings.tickVolume);
-  }, [gameState.settings.bgmVolume, gameState.settings.bgmEnabled, gameState.settings.tickVolume]);
+  }, [
+    gameState.settings.bgmVolume,
+    gameState.settings.bgmEnabled,
+    gameState.settings.isMuted,
+    gameState.settings.ttsEnabled,
+    gameState.settings.tickVolume
+  ]);
 
   const handleBgmVolumeChange = (vol: number) => {
     setBgmVolume(vol);
-    socket.emit('admin:update_settings', { bgmVolume: vol });
+    socket.emit('admin:change_audio_settings', { bgmVolume: vol });
   };
 
   const handleBgmToggle = () => {
     const next = !bgmEnabled;
     setBgmEnabled(next);
-    socket.emit('admin:update_settings', { bgmEnabled: next });
+    socket.emit('admin:change_audio_settings', { isMuted: !next, bgmEnabled: next });
+  };
+
+  const handleTtsToggle = () => {
+    const next = !ttsEnabled;
+    setTtsEnabled(next);
+    socket.emit('admin:change_audio_settings', { ttsEnabled: next });
   };
 
   const handleTickVolumeChange = (vol: number) => {
     setTickVolume(vol);
-    socket.emit('admin:update_settings', { tickVolume: vol });
+    socket.emit('admin:change_audio_settings', { tickVolume: vol });
   };
 
   const handleTestSound = (type: SoundEffectType) => {
@@ -1514,7 +1534,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                {bgmEnabled ? '🎵 BGM 켜짐' : '🔇 BGM 음소거'} | 초침 {Math.round(tickVolume * 100)}%
+                {bgmEnabled ? `🎵 BGM ${Math.round(bgmVolume * 100)}%` : '🔇 BGM 음소거'} | 🎙️ 낭독 {ttsEnabled ? 'ON' : 'OFF'} | 초침 {Math.round(tickVolume * 100)}%
               </span>
               <span style={{ fontSize: '1rem', color: '#cbd5e1' }}>
                 {isSoundPanelOpen ? '▲' : '▼'}
@@ -1524,12 +1544,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
           {isSoundPanelOpen && (
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #334155' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                {/* BGM 음량 슬라이더 & 음소거 토글 */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                {/* 1. BGM 음량 슬라이더 & 원터치 음소거 토글 */}
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '14px', border: '1px solid #334155' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8' }}>
-                      🎵 풀이 BGM 음량
+                      🔊 전체 BGM 볼륨 (0% ~ 100%)
                     </span>
                     <button
                       onClick={handleBgmToggle}
@@ -1539,8 +1559,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                         background: bgmEnabled ? '#22c55e' : '#64748b',
                         color: 'white',
                         fontSize: '0.78rem',
-                        fontWeight: 700
+                        fontWeight: 700,
+                        border: 'none',
+                        cursor: 'pointer'
                       }}
+                      title={bgmEnabled ? '전광판 BGM 음소거' : '전광판 BGM 켜기'}
                     >
                       {bgmEnabled ? '소리 ON' : '음소거 MUTE'}
                     </button>
@@ -1559,9 +1582,57 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                       {bgmEnabled ? `${Math.round(bgmVolume * 100)}%` : '0%'}
                     </span>
                   </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                    TV 전광판 문제 풀이 배경음악의 음량을 실시간 원격 조절합니다.
+                  </div>
                 </div>
 
-                {/* 초침 효과음 볼륨 슬라이더 */}
+                {/* 2. 문제 사전 낭독 (TTS 음성) ON/OFF 토글 스위치 */}
+                <div style={{ background: '#0f172a', padding: '16px', borderRadius: '14px', border: '1px solid #334155' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399' }}>
+                      🎙️ 문제 사전 낭독 (TTS 음성)
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      background: ttsEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.2)',
+                      color: ttsEnabled ? '#34d399' : '#94a3b8',
+                      fontWeight: 700
+                    }}>
+                      {ttsEnabled ? '한국어 음성 낭독' : '음성 꺼짐 (텍스트만)'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <button
+                      onClick={handleTtsToggle}
+                      style={{
+                        flex: 1,
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        background: ttsEnabled ? 'linear-gradient(135deg, #059669, #10b981)' : '#334155',
+                        border: ttsEnabled ? '1px solid #34d399' : '1px solid #475569',
+                        color: 'white',
+                        fontSize: '0.88rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      title="TV 화면 문제 낭독 음성 ON/OFF 토글"
+                    >
+                      {ttsEnabled ? '🗣️ 음성 낭독 활성화됨 (ON)' : '🔇 음성 낭독 비활성화됨 (OFF)'}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    TV 전광판에서 보기가 열리기 전 문제를 음성으로 읽어줄지 원격 제어합니다.
+                  </div>
+                </div>
+
+                {/* 3. 초침 효과음 볼륨 슬라이더 */}
                 <div style={{ background: '#0f172a', padding: '16px', borderRadius: '14px', border: '1px solid #334155' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b' }}>
@@ -1584,6 +1655,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                     <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f8fafc', width: '45px', textAlign: 'right' }}>
                       {Math.round(tickVolume * 100)}%
                     </span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                    문제 마감 3초 전 TV 화면 대형 시계 연출과 함께 울리는 초침 볼륨입니다.
                   </div>
                 </div>
               </div>

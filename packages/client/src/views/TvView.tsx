@@ -105,17 +105,50 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   };
 
+  // 최초 사용자 클릭/터치/키 입력 시 Web Audio 및 브라우저 오디오 정책 잠금 해제
+  useEffect(() => {
+    const unlockAudio = () => {
+      soundEngine.enable();
+      setSoundEnabled(true);
+      if (gameState.status === 'IN_ROUND') {
+        playBgm();
+      }
+    };
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [gameState.status]);
+
   useEffect(() => {
     if (gameState.settings.bgmVolume !== undefined) {
       setBgmVolume(gameState.settings.bgmVolume);
     }
-    if (gameState.settings.bgmEnabled !== undefined) {
+    if (gameState.settings.isMuted !== undefined) {
+      setBgmMuted(gameState.settings.isMuted);
+    } else if (gameState.settings.bgmEnabled !== undefined) {
       setBgmMuted(!gameState.settings.bgmEnabled);
+    }
+    if (gameState.settings.ttsEnabled !== undefined) {
+      setTtsEnabled(gameState.settings.ttsEnabled);
+      if (!gameState.settings.ttsEnabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     }
     if (gameState.settings.tickVolume !== undefined) {
       soundEngine.setTickVolume(gameState.settings.tickVolume);
     }
-  }, [gameState.settings.bgmVolume, gameState.settings.bgmEnabled, gameState.settings.tickVolume]);
+  }, [
+    gameState.settings.bgmVolume,
+    gameState.settings.bgmEnabled,
+    gameState.settings.isMuted,
+    gameState.settings.ttsEnabled,
+    gameState.settings.tickVolume
+  ]);
 
   // 볼륨/음소거 변경 시 실시간 반영
   useEffect(() => {
@@ -703,92 +736,10 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
               {gameState.players.length - survivors.length} <span style={{ fontSize: '0.9rem' }}>명</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* 문제 풀이 BGM 오디오 엘리먼트 (/bgm.mp4) */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* 문제 풀이 BGM 오디오 엘리먼트 (/bgm.mp4) - 관리자 페이지에서 실시간 원격 제어 */}
             <audio ref={bgmAudioRef} src="/bgm.mp4" loop preload="auto" />
 
-            {/* BGM 볼륨 슬라이더 및 음소거 토글 */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'rgba(30, 41, 59, 0.85)',
-                border: '1px solid #475569',
-                borderRadius: '8px',
-                padding: '4px 10px'
-              }}
-              title="문제 풀이 시간 BGM 볼륨 조절"
-            >
-              <button
-                onClick={() => setBgmMuted(prev => !prev)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: bgmMuted ? '#94a3b8' : '#38bdf8',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  padding: '2px 4px'
-                }}
-                title={bgmMuted ? 'BGM 음소거 해제' : 'BGM 음소거'}
-              >
-                {bgmMuted ? '🔇 BGM OFF' : '🎵 BGM ON'}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={bgmMuted ? 0 : bgmVolume}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setBgmVolume(val);
-                  if (bgmMuted && val > 0) setBgmMuted(false);
-                }}
-                style={{
-                  width: isMobile ? '55px' : '75px',
-                  height: '4px',
-                  cursor: 'pointer',
-                  accentColor: '#38bdf8'
-                }}
-              />
-              <span style={{ fontSize: '0.72rem', color: '#cbd5e1', minWidth: '28px', textAlign: 'right' }}>
-                {bgmMuted ? '0%' : `${Math.round(bgmVolume * 100)}%`}
-              </span>
-            </div>
-
-            <button
-              onClick={() => setTtsEnabled(prev => !prev)}
-              style={{
-                padding: '6px 12px',
-                background: ttsEnabled ? '#059669' : '#475569',
-                color: 'white',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer'
-              }}
-              title="문제 낭독 음성 ON/OFF 토글"
-            >
-              {ttsEnabled ? '🗣️ 음성 낭독 ON' : '🔇 음성 낭독 OFF'}
-            </button>
-            {!soundEnabled && (
-              <button
-                onClick={toggleSound}
-                style={{
-                  padding: '6px 12px',
-                  background: '#4338ca',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700
-                }}
-              >
-                🔊 음향
-              </button>
-            )}
             <button
               onClick={() => window.open('/admin', '_blank')}
               style={{

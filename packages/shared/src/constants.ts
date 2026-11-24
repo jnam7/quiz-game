@@ -29,6 +29,8 @@ export const DEFAULT_SETTINGS = {
   maxPlayers: 300,
   isSoundEnabled: true,
   bgmEnabled: true,
+  ttsEnabled: true,
+  isMuted: false,
   autoProgress: true,
   questionTimeLimit: 15,
   stageTimeLimits: {
