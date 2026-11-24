@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GameState, RoundInfo, RoundResult, Player, ChatMessage } from '@quiz/shared';
+import { GameState, RoundInfo, RoundResult, Player, ChatMessage, calculateReadingDelay } from '@quiz/shared';
 import { socket } from '../socket';
 import { soundEngine } from '../utils/sound';
 import confetti from 'canvas-confetti';
@@ -71,6 +71,77 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const [bgmVolume, setBgmVolume] = useState<number>(1.0); // 0.0 ~ 1.0 (기본 100% / 1.0)
   const [bgmMuted, setBgmMuted] = useState<boolean>(false);
+  const bgmFadeAnimRef = useRef<number | null>(null);
+
+  // 라운드 종료 / BGM 정지 시 완전 무음 및 오디오 상태 클린업 (잔류 음 및 버퍼 튐 방지)
+  const cleanupBgm = () => {
+    if (bgmFadeAnimRef.current !== null) {
+      cancelAnimationFrame(bgmFadeAnimRef.current);
+      bgmFadeAnimRef.current = null;
+    }
+    const audio = bgmAudioRef.current;
+    if (audio) {
+      audio.volume = 0; // 잔여 오디오 버퍼 즉시 차단
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {}
+    }
+  };
+
+  // BGM 시작 시 볼륨 0 및 currentTime = 0 초기화 후 80ms 마이크로 페이드인(Micro Fade-in)
+  const startBgmWithFadeIn = () => {
+    const audio = bgmAudioRef.current;
+    if (!audio) return;
+
+    if (bgmFadeAnimRef.current !== null) {
+      cancelAnimationFrame(bgmFadeAnimRef.current);
+      bgmFadeAnimRef.current = null;
+    }
+
+    // 1. 재생 전 볼륨을 0으로 둔 상태에서 currentTime = 0 초기화 (이전 라운드 잔류 버퍼 음 튀는 현상 원천 차단)
+    audio.volume = 0;
+    audio.muted = bgmMuted;
+    try {
+      audio.currentTime = 0;
+    } catch {}
+
+    const targetVolume = bgmMuted ? 0 : bgmVolume;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          // 2. play() 성공 직후 80ms 동안 목표 볼륨까지 부드럽게 마이크로 페이드인
+          if (bgmMuted || targetVolume <= 0) {
+            audio.volume = 0;
+            return;
+          }
+
+          const duration = 80; // 80ms 동안 부드러운 페이드인
+          const startTime = performance.now();
+
+          const step = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            if (audio) {
+              audio.volume = progress * targetVolume;
+            }
+            if (progress < 1) {
+              bgmFadeAnimRef.current = requestAnimationFrame(step);
+            } else {
+              bgmFadeAnimRef.current = null;
+              if (audio) audio.volume = targetVolume;
+            }
+          };
+
+          bgmFadeAnimRef.current = requestAnimationFrame(step);
+        })
+        .catch((err) => {
+          console.log('[BGM] 자동 재생 일시 대기 (브라우저 상호작용 필요 등):', err);
+        });
+    }
+  };
 
   useEffect(() => {
     if (gameState.settings.bgmVolume !== undefined) {
@@ -84,35 +155,25 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   }, [gameState.settings.bgmVolume, gameState.settings.bgmEnabled, gameState.settings.tickVolume]);
 
+  // 볼륨/음소거 변경 시 재생 중인 경우 즉시 반영 (페이드인 진행 중이 아닐 때)
   useEffect(() => {
-    if (bgmAudioRef.current) {
+    if (gameState.status === 'IN_ROUND' && bgmAudioRef.current && bgmFadeAnimRef.current === null) {
       bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
       bgmAudioRef.current.muted = bgmMuted;
     }
-  }, [bgmVolume, bgmMuted]);
+  }, [bgmVolume, bgmMuted, gameState.status]);
 
-  // 문제 풀이 타이머 시작 시 BGM 자동 재생 / 라운드 종료 시 즉시 정지 및 되감기
+  // 문제 풀이 타이머 시작 시 BGM 마이크로 페이드인 재생 / 라운드 종료 시 즉시 클린업
   useEffect(() => {
     if (gameState.status === 'IN_ROUND') {
-      if (bgmAudioRef.current) {
-        bgmAudioRef.current.currentTime = 0;
-        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume; // 다음 문제로 넘어가 재생될 때는 원래 볼륨(1.0)으로 복구
-        bgmAudioRef.current.muted = bgmMuted;
-        const playPromise = bgmAudioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((err) => {
-            console.log('[BGM] 자동 재생 일시 대기 (브라우저 상호작용 필요 등):', err);
-          });
-        }
-      }
+      startBgmWithFadeIn();
     } else {
-      if (bgmAudioRef.current) {
-        bgmAudioRef.current.pause();
-        bgmAudioRef.current.currentTime = 0;
-        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
-      }
+      cleanupBgm();
     }
-  }, [gameState.status, bgmVolume, bgmMuted]);
+    return () => {
+      cleanupBgm();
+    };
+  }, [gameState.status]);
 
   // 실시간 채팅 및 리액션 피드
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -305,12 +366,23 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     };
   }, []);
 
-  // 1단계: Web Speech API (TTS) 한국어 문제 사전 낭독 (자연스러운 뉴럴 보이스 및 톤 적용)
+  // 1단계: Web Speech API (TTS) 한국어 문제 사전 낭독 및 글자 수 비례 동적 딜레이
   useEffect(() => {
     if (gameState.status === 'QUESTION_READING' && roundInfo) {
+      const questionText = roundInfo.question || '';
+      const readingDelay = roundInfo.readingDuration || calculateReadingDelay(questionText);
+      const readingStartTime = Date.now();
+
+      let hasOpened = false;
+      const triggerOpenOptions = () => {
+        if (hasOpened) return;
+        hasOpened = true;
+        socket.emit('round:open_options');
+      };
+
       if (typeof window !== 'undefined' && 'speechSynthesis' in window && ttsEnabled) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(roundInfo.question);
+        const utterance = new SpeechSynthesisUtterance(questionText);
         utterance.lang = 'ko-KR';
         utterance.rate = 0.95; // 기계음처럼 너무 빠르지 않고 또박또박 전달되도록 약간 감속
         utterance.pitch = 1.05; // 약간 밝고 명료한 퀴즈쇼 진행 톤
@@ -322,30 +394,33 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           console.log(`[TV TTS] 고품질 보이스 할당: ${bestVoice.name} (${bestVoice.lang})`);
         }
 
-        let hasOpened = false;
-        const triggerOpenOptions = () => {
-          if (hasOpened) return;
-          hasOpened = true;
-          socket.emit('round:open_options');
-        };
-
+        // TTS 낭독 종료 시: 글자 수 비례 최소 낭독 시간(readingDelay)을 반드시 보장
         utterance.onend = () => {
-          console.log('[TV TTS] 문제 낭독 완료 -> 보기 오픈 요청');
-          triggerOpenOptions();
+          console.log('[TV TTS] 문제 음성 낭독 종료');
+          const elapsed = Date.now() - readingStartTime;
+          const waitRemaining = Math.max(0, readingDelay - elapsed);
+          if (waitRemaining > 0) {
+            console.log(`[TV TTS] 최소 낭독 대기 시간(${readingDelay}ms) 유지를 위해 ${waitRemaining}ms 추가 대기`);
+            setTimeout(triggerOpenOptions, waitRemaining);
+          } else {
+            triggerOpenOptions();
+          }
         };
 
         utterance.onerror = (e) => {
           console.error('[TV TTS Error]:', e);
-          triggerOpenOptions();
+          const elapsed = Date.now() - readingStartTime;
+          const waitRemaining = Math.max(0, readingDelay - elapsed);
+          setTimeout(triggerOpenOptions, waitRemaining);
         };
 
         window.speechSynthesis.speak(utterance);
 
-        // 음성합성이 멈추거나 백그라운드 지연 발생 대비 안전 타이머 (7.5초)
+        // 음성합성이 멈추거나 백그라운드 지연 발생 대비 안전 타이머 (동적 딜레이 + 1.2초)
         const fallbackTimer = setTimeout(() => {
-          console.log('[TV TTS Fallback] 안전 타이머 도달 -> 보기 오픈 요청');
+          console.log(`[TV TTS Fallback] 안전 타이머(${readingDelay + 1200}ms) 도달 -> 보기 오픈 요청`);
           triggerOpenOptions();
-        }, 7500);
+        }, readingDelay + 1200);
 
         return () => {
           clearTimeout(fallbackTimer);
@@ -354,10 +429,11 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           }
         };
       } else {
-        // 음성 낭독이 꺼져 있거나 브라우저 미지원 시 1.5초 후 자동 오픈
+        // 음성 낭독이 꺼져 있거나 브라우저 미지원 시 글자 수 비례 동적 딜레이 후 자동 오픈
         const timer = setTimeout(() => {
-          socket.emit('round:open_options');
-        }, 1500);
+          console.log(`[TV No-TTS] 글자 수 비례 동적 딜레이(${readingDelay}ms) 완료 -> 보기 오픈 요청`);
+          triggerOpenOptions();
+        }, readingDelay);
         return () => clearTimeout(timer);
       }
     } else {
@@ -383,7 +459,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             bgmAudioRef.current.volume = Math.min(bgmVolume * 0.25, 0.25);
           }
         } else if (remaining > 3) {
-          if (bgmAudioRef.current && !bgmMuted) {
+          if (bgmAudioRef.current && !bgmMuted && bgmFadeAnimRef.current === null) {
             bgmAudioRef.current.volume = bgmVolume;
           }
         }
@@ -394,11 +470,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           if (remaining <= 3 && remaining > 0) {
             soundEngine.play('COUNTDOWN_URGENT');
           } else if (remaining === 0) {
-            if (bgmAudioRef.current) {
-              bgmAudioRef.current.pause();
-              bgmAudioRef.current.currentTime = 0;
-              bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
-            }
+            cleanupBgm();
             soundEngine.play('TIMEOUT');
           }
         }

@@ -61,6 +61,7 @@ export interface RoundInfo {
   serverStartTime: number; // 서버 기준 시작 시각(ms)
   serverEndTime: number;   // 서버 기준 마감 시각(ms)
   isReading?: boolean;     // 문제 낭독 단계 여부
+  readingDuration?: number; // 문제 글자 수 비례 동적 낭독 시간(ms)
 }
 
 export interface RoundResult {

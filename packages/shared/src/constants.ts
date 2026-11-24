@@ -50,4 +50,15 @@ export const SOCKET_ROOM_ADMIN = 'room:survival_quiz_admin';
 export const SOCKET_ROOM_TV = 'room:survival_quiz_tv';
 
 export const RESULT_DISPLAY_SEC = 5;
+
+/**
+ * 긴 문제 출제 시 글자 수 비례 동적 낭독/확인 딜레이 계산식 (ms)
+ * - 최소 3.5초(3500ms) 보장
+ * - 한 글자당 약 120ms 추가
+ * - 최대 8~9초(9000ms) 상한선
+ */
+export const calculateReadingDelay = (questionText?: string): number => {
+  const len = questionText ? questionText.trim().length : 0;
+  return Math.max(3500, Math.min(9000, 2500 + len * 120));
+};
 export const STARTING_COUNTDOWN_SEC = 3;

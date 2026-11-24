@@ -13,7 +13,8 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_STAGE_RULES,
   STARTING_COUNTDOWN_SEC,
-  RESULT_DISPLAY_SEC
+  RESULT_DISPLAY_SEC,
+  calculateReadingDelay
 } from '@quiz/shared';
 import { JsonDatabase } from '../db/Database';
 import { v4 as uuidv4 } from 'uuid';
@@ -405,6 +406,8 @@ export class GameEngine {
     this.roundStartTime = 0;
     this.roundEndTime = 0;
 
+    const readingDuration = calculateReadingDelay(this.activeQuiz.question);
+
     const roundInfo: RoundInfo = {
       roundNumber: this.currentRoundNumber,
       stageName,
@@ -416,18 +419,19 @@ export class GameEngine {
       timeLimit,
       serverStartTime: 0,
       serverEndTime: 0,
-      isReading: true
+      isReading: true,
+      readingDuration
     };
 
-    console.log(`[Round ${this.currentRoundNumber} Reading] 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id})`);
+    console.log(`[Round ${this.currentRoundNumber} Reading] 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id}, 글자수: ${this.activeQuiz.question.length}, 낭독 시간: ${readingDuration}ms)`);
     this.emitRoundStart(roundInfo);
     this.syncState();
 
-    // TV TTS 낭독 실패 또는 지연 대비 서버 안전 타이머 (8초)
+    // TV TTS 낭독 실패 또는 지연 대비 서버 안전 타이머 (글자 수 비례 동적 낭독 시간 + 1.5초)
     this.readingTimeoutTimer = setTimeout(() => {
-      console.log(`[Round ${this.currentRoundNumber}] 낭독 안전 타이머(8초) 도달 -> 즉시 보기 오픈`);
+      console.log(`[Round ${this.currentRoundNumber}] 낭독 안전 타이머(${readingDuration + 1500}ms) 도달 -> 즉시 보기 오픈`);
       this.openOptionsAndStartTimer();
-    }, 8000);
+    }, readingDuration + 1500);
   }
 
   // --- 문제 낭독 완료 후 4개 보기 오픈 및 제한시간 타이머 시작 (2단계) ---
@@ -533,6 +537,7 @@ export class GameEngine {
     const timeLimit = this.settings.questionTimeLimit || 15; // 설정된 제한시간 적용 (기본 15초)
     this.roundStartTime = 0;
     this.roundEndTime = 0;
+    const readingDuration = calculateReadingDelay(this.activeQuiz.question);
 
     const roundInfo: RoundInfo = {
       roundNumber: this.currentRoundNumber,
@@ -545,17 +550,18 @@ export class GameEngine {
       timeLimit,
       serverStartTime: 0,
       serverEndTime: 0,
-      isReading: true
+      isReading: true,
+      readingDuration
     };
 
-    console.log(`[Random Quiz Triggered] 라운드 ${this.currentRoundNumber}, 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id})`);
+    console.log(`[Random Quiz Triggered] 라운드 ${this.currentRoundNumber}, 문제 사전 낭독 시작 (ID: ${this.activeQuiz.id}, 글자수: ${this.activeQuiz.question.length}, 낭독 시간: ${readingDuration}ms)`);
     this.emitRoundStart(roundInfo);
     this.syncState();
 
     this.readingTimeoutTimer = setTimeout(() => {
-      console.log(`[Random Quiz R${this.currentRoundNumber}] 낭독 안전 타이머(8초) 도달 -> 즉시 보기 오픈`);
+      console.log(`[Random Quiz R${this.currentRoundNumber}] 낭독 안전 타이머(${readingDuration + 1500}ms) 도달 -> 즉시 보기 오픈`);
       this.openOptionsAndStartTimer();
-    }, 8000);
+    }, readingDuration + 1500);
   }
 
   // --- 문제 자동 선별 (체크된 카테고리 필터링 & 미사용 우선) ---
@@ -956,7 +962,8 @@ export class GameEngine {
         timeLimit: this.status === 'IN_ROUND' ? Math.round((this.roundEndTime - this.roundStartTime) / 1000) : (this.settings.questionTimeLimit || 15),
         serverStartTime: this.roundStartTime,
         serverEndTime: this.roundEndTime,
-        isReading: this.status === 'QUESTION_READING'
+        isReading: this.status === 'QUESTION_READING',
+        readingDuration: calculateReadingDelay(this.activeQuiz.question)
       } : undefined,
       winner,
       lastRoundResult: this.lastRoundResult,
