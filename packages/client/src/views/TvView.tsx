@@ -71,17 +71,12 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const [bgmVolume, setBgmVolume] = useState<number>(1.0); // 0.0 ~ 1.0 (기본 100% / 1.0)
   const [bgmMuted, setBgmMuted] = useState<boolean>(false);
-  const bgmFadeAnimRef = useRef<number | null>(null);
-
-  // 라운드 종료 / BGM 정지 시 완전 무음 및 오디오 상태 클린업 (잔류 음 및 버퍼 튐 방지)
-  const cleanupBgm = () => {
-    if (bgmFadeAnimRef.current !== null) {
-      cancelAnimationFrame(bgmFadeAnimRef.current);
-      bgmFadeAnimRef.current = null;
-    }
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
+  const lastTickSecondRef = useRef<number | null>(null);
+  // 라운드 종료 / BGM 정지 시 즉시 일시정지 및 클린업
+  const stopBgm = () => {
     const audio = bgmAudioRef.current;
     if (audio) {
-      audio.volume = 0; // 잔여 오디오 버퍼 즉시 차단
       audio.pause();
       try {
         audio.currentTime = 0;
@@ -89,57 +84,24 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   };
 
-  // BGM 시작 시 볼륨 0 및 currentTime = 0 초기화 후 80ms 마이크로 페이드인(Micro Fade-in)
-  const startBgmWithFadeIn = () => {
+  // 문제 풀이 시작 시 BGM 정상 볼륨으로 즉시 재생
+  const playBgm = () => {
     const audio = bgmAudioRef.current;
     if (!audio) return;
 
-    if (bgmFadeAnimRef.current !== null) {
-      cancelAnimationFrame(bgmFadeAnimRef.current);
-      bgmFadeAnimRef.current = null;
-    }
-
-    // 1. 재생 전 볼륨을 0으로 둔 상태에서 currentTime = 0 초기화 (이전 라운드 잔류 버퍼 음 튀는 현상 원천 차단)
-    audio.volume = 0;
-    audio.muted = bgmMuted;
     try {
       audio.currentTime = 0;
     } catch {}
 
     const targetVolume = bgmMuted ? 0 : bgmVolume;
+    audio.volume = targetVolume;
+    audio.muted = bgmMuted;
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          // 2. play() 성공 직후 80ms 동안 목표 볼륨까지 부드럽게 마이크로 페이드인
-          if (bgmMuted || targetVolume <= 0) {
-            audio.volume = 0;
-            return;
-          }
-
-          const duration = 80; // 80ms 동안 부드러운 페이드인
-          const startTime = performance.now();
-
-          const step = (now: number) => {
-            const elapsed = now - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            if (audio) {
-              audio.volume = progress * targetVolume;
-            }
-            if (progress < 1) {
-              bgmFadeAnimRef.current = requestAnimationFrame(step);
-            } else {
-              bgmFadeAnimRef.current = null;
-              if (audio) audio.volume = targetVolume;
-            }
-          };
-
-          bgmFadeAnimRef.current = requestAnimationFrame(step);
-        })
-        .catch((err) => {
-          console.log('[BGM] 자동 재생 일시 대기 (브라우저 상호작용 필요 등):', err);
-        });
+      playPromise.catch((err) => {
+        console.log('[BGM] 자동 재생 일시 대기 (브라우저 상호작용 필요 등):', err);
+      });
     }
   };
 
@@ -155,23 +117,27 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     }
   }, [gameState.settings.bgmVolume, gameState.settings.bgmEnabled, gameState.settings.tickVolume]);
 
-  // 볼륨/음소거 변경 시 재생 중인 경우 즉시 반영 (페이드인 진행 중이 아닐 때)
+  // 볼륨/음소거 변경 시 실시간 반영
   useEffect(() => {
-    if (gameState.status === 'IN_ROUND' && bgmAudioRef.current && bgmFadeAnimRef.current === null) {
-      bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+    if (bgmAudioRef.current) {
+      if (gameState.status === 'IN_ROUND' && secondsRemaining <= 3 && secondsRemaining > 0) {
+        bgmAudioRef.current.volume = bgmMuted ? 0 : Math.min(bgmVolume * 0.25, 0.25);
+      } else {
+        bgmAudioRef.current.volume = bgmMuted ? 0 : bgmVolume;
+      }
       bgmAudioRef.current.muted = bgmMuted;
     }
-  }, [bgmVolume, bgmMuted, gameState.status]);
+  }, [bgmVolume, bgmMuted, gameState.status, secondsRemaining]);
 
-  // 문제 풀이 타이머 시작 시 BGM 마이크로 페이드인 재생 / 라운드 종료 시 즉시 클린업
+  // 문제 풀이 시작(보기가 열렸을 때) BGM 정상 볼륨으로 즉시 재생 / 라운드 종료 시 즉시 정지
   useEffect(() => {
     if (gameState.status === 'IN_ROUND') {
-      startBgmWithFadeIn();
+      playBgm();
     } else {
-      cleanupBgm();
+      stopBgm();
     }
     return () => {
-      cleanupBgm();
+      stopBgm();
     };
   }, [gameState.status]);
 
@@ -444,9 +410,6 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   }, [gameState.status, roundInfo?.quizId, ttsEnabled, voicesLoaded]);
 
   // 실시간 타이머 계산 및 종료 3초 전 BGM 자동 감쇄(Ducking) / 고출력 아날로그 초침 / 0초 타임오버 버저
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
-  const lastTickSecondRef = useRef<number | null>(null);
-
   useEffect(() => {
     if (gameState.status === 'IN_ROUND' && roundInfo && roundInfo.serverEndTime) {
       const interval = setInterval(() => {
@@ -459,7 +422,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             bgmAudioRef.current.volume = Math.min(bgmVolume * 0.25, 0.25);
           }
         } else if (remaining > 3) {
-          if (bgmAudioRef.current && !bgmMuted && bgmFadeAnimRef.current === null) {
+          if (bgmAudioRef.current && !bgmMuted) {
             bgmAudioRef.current.volume = bgmVolume;
           }
         }
@@ -470,7 +433,7 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
           if (remaining <= 3 && remaining > 0) {
             soundEngine.play('COUNTDOWN_URGENT');
           } else if (remaining === 0) {
-            cleanupBgm();
+            stopBgm();
             soundEngine.play('TIMEOUT');
           }
         }
@@ -484,6 +447,9 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
   const toggleSound = () => {
     soundEngine.enable();
     setSoundEnabled(true);
+    if (gameState.status === 'IN_ROUND') {
+      playBgm();
+    }
   };
 
   const handleResetToLobby = () => {
