@@ -48,7 +48,7 @@ export class JsonDatabase {
   public getChannelPassword(channel: string): string {
     const ch = normalizeChannel(channel);
     const envKey = `${ch.toUpperCase()}_ADMIN_PASSWORD`;
-    return process.env[envKey] || this.channelPasswords[ch] || DEFAULT_CHANNEL_PASSWORDS[ch] || `${ch}pass`;
+    return process.env[envKey] || this.channelPasswords[ch] || DEFAULT_CHANNEL_PASSWORDS[ch] || '1111';
   }
 
   public setChannelPassword(channel: string, newPassword: string): boolean {

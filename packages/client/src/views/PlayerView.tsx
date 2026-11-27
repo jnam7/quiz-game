@@ -67,7 +67,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
             if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
               try {
                 navigator.vibrate([100, 80, 100]);
-              } catch {}
+              } catch { }
             }
           }
         }
@@ -107,7 +107,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     if (savedToken) {
       try {
         socket.emit('player:leave', { token: savedToken });
-      } catch {}
+      } catch { }
     }
     localStorage.removeItem(TOKEN_KEY);
     if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
@@ -135,7 +135,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
         try {
           socket.emit('player:leave', { token: savedToken });
           socket.disconnect();
-        } catch {}
+        } catch { }
         localStorage.removeItem(TOKEN_KEY);
         if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
       }
@@ -147,7 +147,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
         try {
           socket.emit('player:leave', { token: savedToken });
           socket.disconnect();
-        } catch {}
+        } catch { }
         localStorage.removeItem(TOKEN_KEY);
       }
     };
@@ -328,7 +328,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
         localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
         try {
           window.history.pushState({ inLobby: true }, '', window.location.href);
-        } catch {}
+        } catch { }
       } else {
         setErrorMessage(res.message || '참가에 실패했습니다.');
       }
@@ -818,8 +818,8 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
           border: (secondsLeft <= 3 && gameState.status === 'IN_ROUND')
             ? '2px solid #ef4444'
             : gameState.status === 'QUESTION_READING'
-            ? '1.5px solid #facc15'
-            : '1px solid rgba(255,255,255,0.12)',
+              ? '1.5px solid #facc15'
+              : '1px solid rgba(255,255,255,0.12)',
           boxShadow: (secondsLeft <= 3 && gameState.status === 'IN_ROUND')
             ? '0 0 25px rgba(239, 68, 68, 0.7)'
             : '0 4px 16px rgba(0, 0, 0, 0.3)',

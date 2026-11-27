@@ -12,11 +12,11 @@ export const CHANNEL_NAMES: Record<ChannelId, string> = {
 };
 
 export const DEFAULT_CHANNEL_PASSWORDS: Record<ChannelId, string> = {
-  ch1: 'ch1pass',
-  ch2: 'ch2pass',
-  ch3: 'ch3pass',
-  ch4: 'ch4pass',
-  ch5: 'ch5pass'
+  ch1: '1111',
+  ch2: '2222',
+  ch3: '3333',
+  ch4: '4444',
+  ch5: '5555'
 };
 
 export const normalizeChannel = (ch?: string | null): ChannelId => {
