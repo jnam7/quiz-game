@@ -92,6 +92,51 @@ export function setupSocketHandlers(
       return null;
     };
 
+    // 1-0. 플레이어 세션 자동 재연결
+    socket.on('player:reconnect', (data, callback) => {
+      try {
+        if (!data || !data.playerId) {
+          if (callback) callback({ success: false, message: '재연결 세션 정보가 없습니다.' });
+          socket.emit('player:reconnect_failed', { message: '재연결 세션 정보가 없습니다.' });
+          return;
+        }
+
+        const targetChannel = normalizeChannel(data.channel || socket.data.channel);
+        socket.data.channel = targetChannel;
+        socket.join(getChannelRoom(targetChannel));
+
+        const engine = gameEngines.get(targetChannel) || gameEngines.get('ch1')!;
+        const result = engine.reconnectPlayer(socket.id, data.playerId);
+
+        if (result.success && result.player) {
+          const currentState: GameState = { ...engine.getState(), channel: targetChannel };
+          socket.emit('player:reconnect_success', {
+            player: result.player,
+            state: currentState
+          });
+          socket.emit('game:state_sync', currentState);
+          socket.emit('chat:history', engine.getChatHistory());
+
+          if (callback) {
+            callback({
+              success: true,
+              player: result.player,
+              state: currentState
+            });
+          }
+        } else {
+          socket.emit('player:reconnect_failed', { message: result.message || '세션이 만료되었습니다.' });
+          if (callback) {
+            callback({ success: false, message: result.message || '세션이 만료되었습니다.' });
+          }
+        }
+      } catch (err: any) {
+        console.error('[player:reconnect Error]:', err);
+        socket.emit('player:reconnect_failed', { message: '재연결 처리 중 오류가 발생했습니다.' });
+        if (callback) callback({ success: false, message: '재연결 처리 중 오류가 발생했습니다.' });
+      }
+    });
+
     // 1. 플레이어 참가 및 재접속/복구
     socket.on('player:join', (data, callback) => {
       try {

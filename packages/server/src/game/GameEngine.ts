@@ -34,6 +34,7 @@ export class GameEngine {
 
   private players: Map<string, Player> = new Map(); // key: token
   private socketToToken: Map<string, string> = new Map(); // key: socketId -> token
+  private disconnectTimers: Map<string, NodeJS.Timeout> = new Map(); // key: token -> 유예 타이머
   private usedQuizIds: Set<number> = new Set();
   private settings: GameSettings = { ...DEFAULT_SETTINGS };
   private chatHistory: ChatMessage[] = [];
@@ -89,12 +90,18 @@ export class GameEngine {
     // 1. 기존 토큰이 있는 경우 (새로고침 / 재접속 복구)
     if (existingToken && this.players.has(existingToken)) {
       const player = this.players.get(existingToken)!;
+      // 유예 타이머가 있다면 취소
+      if (this.disconnectTimers.has(existingToken)) {
+        clearTimeout(this.disconnectTimers.get(existingToken)!);
+        this.disconnectTimers.delete(existingToken);
+      }
       // 이전 소켓 매핑 해제 및 새 소켓 매핑
       for (const [sId, tok] of this.socketToToken.entries()) {
         if (tok === existingToken) this.socketToToken.delete(sId);
       }
       player.id = socketId;
       player.isOnline = true;
+      player.isConnected = true;
       if (trimmedNick && player.nickname !== trimmedNick) {
         player.nickname = trimmedNick;
       }
@@ -133,6 +140,7 @@ export class GameEngine {
       isAlive: !isOngoing, // 게임 진행 중 중간 접속자는 관전자/탈락 처리
       score: 0,
       isOnline: true,
+      isConnected: true,
       eliminatedRound: isOngoing ? this.currentRoundNumber : undefined,
       eliminatedReason: isOngoing ? 'DISCONNECT_FORCED' : undefined
     };
@@ -192,6 +200,10 @@ export class GameEngine {
   // --- 플레이어 퇴장/제거 (대기실에서는 완전 제거, 진행 중에는 오프라인 처리) ---
   public removePlayer(tokenOrSocketId: string): boolean {
     const token = this.socketToToken.get(tokenOrSocketId) || tokenOrSocketId;
+    if (this.disconnectTimers.has(token)) {
+      clearTimeout(this.disconnectTimers.get(token)!);
+      this.disconnectTimers.delete(token);
+    }
     const player = this.players.get(token);
     if (!player) return false;
 
@@ -207,6 +219,7 @@ export class GameEngine {
       return true;
     } else {
       player.isOnline = false;
+      player.isConnected = false;
       this.syncState();
       return true;
     }
@@ -218,17 +231,82 @@ export class GameEngine {
 
     const player = this.players.get(token);
     if (player) {
-      if (this.status === 'WAITING') {
-        this.players.delete(token);
-        this.socketToToken.delete(socketId);
-        console.log(`[Player Disconnected in WAITING - Removed] ${player.nickname} (남은 대기 인원: ${this.players.size}명)`);
-        this.syncState();
-      } else {
-        player.isOnline = false;
-        console.log(`[Player Disconnected] ${player.nickname} (Offline 처리됨, 상태 보존)`);
-        this.syncState();
+      player.isOnline = false;
+      player.isConnected = false;
+      console.log(`[Player Disconnected] ${player.nickname} (Token: ${token}, status: ${this.status}) - 재접속 유예 타이머(3분) 가동`);
+      this.syncState();
+
+      // 기존 유예 타이머가 있다면 재설정
+      if (this.disconnectTimers.has(token)) {
+        clearTimeout(this.disconnectTimers.get(token)!);
+      }
+
+      // 3분(180초) 재접속 유예 타이머: 유예 기간 동안 생존 여부, 점수, 답안 등 메모리 유지
+      const timer = setTimeout(() => {
+        this.disconnectTimers.delete(token);
+        const p = this.players.get(token);
+        if (p && !p.isOnline && !p.isConnected) {
+          if (this.status === 'WAITING') {
+            this.players.delete(token);
+            for (const [sId, tok] of this.socketToToken.entries()) {
+              if (tok === token) this.socketToToken.delete(sId);
+            }
+            console.log(`[Player Grace Expired - Removed in WAITING] ${p.nickname} (Token: ${token})`);
+            this.syncState();
+          } else {
+            console.log(`[Player Grace Expired - Kept as Offline in Game] ${p.nickname} (Token: ${token})`);
+          }
+        }
+      }, 3 * 60 * 1000);
+
+      this.disconnectTimers.set(token, timer);
+    }
+  }
+
+  // --- 플레이어 조회 (token 또는 id로 조회) ---
+  public getPlayer(tokenOrId: string): Player | undefined {
+    if (this.players.has(tokenOrId)) {
+      return this.players.get(tokenOrId);
+    }
+    for (const p of this.players.values()) {
+      if (p.id === tokenOrId || p.token === tokenOrId) {
+        return p;
       }
     }
+    return undefined;
+  }
+
+  // --- 세션 자동 재연결 복원 ---
+  public reconnectPlayer(
+    socketId: string,
+    playerIdOrToken: string
+  ): { success: boolean; player?: Player; message?: string } {
+    const player = this.getPlayer(playerIdOrToken);
+    if (!player) {
+      return { success: false, message: '참가자 세션이 만료되었거나 찾을 수 없습니다.' };
+    }
+
+    // 유예 타이머 취소
+    if (this.disconnectTimers.has(player.token)) {
+      clearTimeout(this.disconnectTimers.get(player.token)!);
+      this.disconnectTimers.delete(player.token);
+    }
+
+    // 이전 소켓 ID 매핑 제거 및 새 소켓 ID 매핑
+    for (const [sId, tok] of this.socketToToken.entries()) {
+      if (tok === player.token) {
+        this.socketToToken.delete(sId);
+      }
+    }
+    this.socketToToken.set(socketId, player.token);
+
+    player.id = socketId;
+    player.isOnline = true;
+    player.isConnected = true;
+
+    console.log(`[Player Reconnected via player:reconnect] ${player.nickname} (Token: ${player.token}, Socket: ${socketId}, isAlive: ${player.isAlive})`);
+    this.syncState();
+    return { success: true, player };
   }
 
   // --- 플레이어 정답 제출 (원자적 서버 판정 & 자동 인증 복구) ---
@@ -798,6 +876,10 @@ export class GameEngine {
   }
 
   public clearAllPlayers() {
+    for (const timer of this.disconnectTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.disconnectTimers.clear();
     this.players.clear();
     this.socketToToken.clear();
     this.resetGame();

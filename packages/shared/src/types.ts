@@ -52,6 +52,7 @@ export interface Player {
   eliminatedRound?: number; // 몇 라운드에서 탈락했는지
   eliminatedReason?: 'WRONG_ANSWER' | 'TIMEOUT' | 'DISCONNECT_FORCED' | 'ADMIN_KICK';
   isOnline: boolean;
+  isConnected?: boolean;
 }
 
 export type GameStatus =
@@ -157,6 +158,10 @@ export interface ClientToServerEvents {
     data: { nickname: string; token?: string },
     callback: (res: { success: boolean; player?: Player; message?: string }) => void
   ) => void;
+  'player:reconnect': (
+    data: { playerId: string; channel?: string },
+    callback?: (res: { success: boolean; player?: Player; state?: GameState; message?: string }) => void
+  ) => void;
   'player:submit_answer': (
     data: { answerIndex: number; clientTimestamp: number; token?: string },
     callback: (res: { success: boolean; message?: string; isSpectator?: boolean }) => void
@@ -237,6 +242,8 @@ export interface ServerToClientEvents {
   'game:force_lobby': () => void;
   'game:player_kicked_all': () => void;
   'game:play_sound': (soundType: SoundEffectType) => void;
+  'player:reconnect_success': (data: { player: Player; state: GameState }) => void;
+  'player:reconnect_failed': (data: { message?: string }) => void;
   'player:answered': (data: { token: string; answerCount: number; totalAlive: number }) => void;
   'chat:message': (chat: ChatMessage) => void;
   'chat:history': (messages: ChatMessage[]) => void;

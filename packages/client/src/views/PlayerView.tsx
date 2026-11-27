@@ -11,12 +11,40 @@ interface PlayerViewProps {
 
 export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) => {
   const currentChannel = channel || gameState.channel || 'ch1';
+  const SESSION_KEY = 'quiz_player_session';
   const TOKEN_KEY = `quiz_survival_player_token_${currentChannel}`;
 
+  const getStoredSession = (): { playerId: string; nickname: string; channel: string } | null => {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.playerId || parsed.token)) {
+        return {
+          playerId: parsed.playerId || parsed.token,
+          nickname: parsed.nickname || '',
+          channel: parsed.channel || currentChannel
+        };
+      }
+    } catch {}
+    return null;
+  };
+
   const getSavedToken = () => {
+    const session = getStoredSession();
+    if (session?.playerId) return session.playerId;
     return localStorage.getItem(TOKEN_KEY) || (currentChannel === 'ch1' ? localStorage.getItem('quiz_survival_player_token') : null);
   };
-  const [nicknameInput, setNicknameInput] = useState(() => localStorage.getItem('quiz_survival_player_nickname') || '');
+  const [nicknameInput, setNicknameInput] = useState(() => {
+    const session = getStoredSession();
+    return session?.nickname || localStorage.getItem('quiz_survival_player_nickname') || '';
+  });
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const session = getStoredSession();
+    return !!(session && session.playerId);
+  });
   const [player, setPlayer] = useState<Player | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -80,38 +108,88 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     }
   }, [gameState.status, roundInfo]);
 
-  // 1. 로컬 스토리지 토큰으로 자동 재접속/상태 복구 및 소켓 재연결 시 자동 재등록
+  // 1. 로컬 스토리지 세션으로 자동 재접속/상태 복구 및 소켓 재연결 시 자동 재등록
   const restorePlayerSession = () => {
-    const savedToken = getSavedToken();
-    const savedNick = localStorage.getItem('quiz_survival_player_nickname') || '';
-    if (savedToken) {
-      socket.emit('player:join', { nickname: savedNick, token: savedToken }, (res) => {
-        if (res.success && res.player) {
-          setPlayer(res.player);
-          localStorage.setItem(TOKEN_KEY, res.player.token);
-          if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', res.player.token);
-          localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
-        } else {
-          // 세션 복구 실패 시 (만료된 세션, 재시작된 서버 등)
-          localStorage.removeItem(TOKEN_KEY);
-          if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
-          setPlayer(null);
-        }
-      });
+    const session = getStoredSession();
+    const savedToken = session?.playerId || getSavedToken();
+    if (!savedToken) {
+      setIsReconnecting(false);
+      return;
     }
+
+    setIsReconnecting(true);
+
+    // 1. 서버 player:reconnect 호출
+    socket.emit('player:reconnect', {
+      playerId: savedToken,
+      channel: currentChannel
+    }, (res) => {
+      if (res && res.success && res.player) {
+        setPlayer(res.player);
+        setIsReconnecting(false);
+        // 답안 선택 복원
+        if (res.player.selectedAnswer !== undefined) {
+          setSelectedOption(res.player.selectedAnswer);
+          setIsSubmitted(true);
+        }
+        const newSession = {
+          playerId: res.player.token,
+          nickname: res.player.nickname,
+          channel: currentChannel
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+        localStorage.setItem(TOKEN_KEY, res.player.token);
+        if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', res.player.token);
+        localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
+      } else {
+        // player:reconnect 실패 시 legacy player:join 시도 (이전 토큰으로 복구)
+        const savedNick = session?.nickname || localStorage.getItem('quiz_survival_player_nickname') || '';
+        socket.emit('player:join', { nickname: savedNick, token: savedToken }, (joinRes) => {
+          if (joinRes && joinRes.success && joinRes.player) {
+            setPlayer(joinRes.player);
+            setIsReconnecting(false);
+            if (joinRes.player.selectedAnswer !== undefined) {
+              setSelectedOption(joinRes.player.selectedAnswer);
+              setIsSubmitted(true);
+            }
+            const newSession = {
+              playerId: joinRes.player.token,
+              nickname: joinRes.player.nickname,
+              channel: currentChannel
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+            localStorage.setItem(TOKEN_KEY, joinRes.player.token);
+            if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', joinRes.player.token);
+            localStorage.setItem('quiz_survival_player_nickname', joinRes.player.nickname);
+          } else {
+            // 완전히 만료된 세션인 경우에만 초기화
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+            if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
+            setPlayer(null);
+            setIsReconnecting(false);
+          }
+        });
+      }
+    });
   };
 
-  // 참가자 자발적 퇴장 (뒤로가기, 창 닫기, 나가기 버튼 클릭 시)
+  // 참가자 명시적 퇴장 (나가기 버튼 클릭 시에만 세션 삭제)
   const handleLeaveLobby = (isUnload = false) => {
-    const savedToken = getSavedToken() || player?.token;
+    const session = getStoredSession();
+    const savedToken = session?.playerId || getSavedToken() || player?.token;
     if (savedToken) {
       try {
         socket.emit('player:leave', { token: savedToken });
       } catch { }
     }
+    localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(TOKEN_KEY);
     if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
     setPlayer(null);
+    setIsReconnecting(false);
+    setSelectedOption(null);
+    setIsSubmitted(false);
     if (!isUnload) {
       socket.disconnect();
       setTimeout(() => {
@@ -120,48 +198,16 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     }
   };
 
-  // 스마트폰 뒤로가기(popstate) 및 창닫기(beforeunload, pagehide) 감지하여 즉시 퇴장 처리
+  // 브라우저 popstate 감지 (세션은 유지하고 뒤로가기 탐색만 처리)
   useEffect(() => {
     const onPopState = () => {
-      const savedToken = getSavedToken();
-      if (savedToken || player) {
-        handleLeaveLobby(false);
-      }
+      // popstate 시 새로고침/이동과 동일하게 세션 유지
     };
-
-    const onBeforeUnload = () => {
-      const savedToken = getSavedToken();
-      if (savedToken && gameState.status === 'WAITING') {
-        try {
-          socket.emit('player:leave', { token: savedToken });
-          socket.disconnect();
-        } catch { }
-        localStorage.removeItem(TOKEN_KEY);
-        if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
-      }
-    };
-
-    const onPageHide = () => {
-      const savedToken = localStorage.getItem(TOKEN_KEY);
-      if (savedToken && gameState.status === 'WAITING') {
-        try {
-          socket.emit('player:leave', { token: savedToken });
-          socket.disconnect();
-        } catch { }
-        localStorage.removeItem(TOKEN_KEY);
-      }
-    };
-
     window.addEventListener('popstate', onPopState);
-    window.addEventListener('beforeunload', onBeforeUnload);
-    window.addEventListener('pagehide', onPageHide);
-
     return () => {
       window.removeEventListener('popstate', onPopState);
-      window.removeEventListener('beforeunload', onBeforeUnload);
-      window.removeEventListener('pagehide', onPageHide);
     };
-  }, [player, gameState.status]);
+  }, []);
 
   useEffect(() => {
     restorePlayerSession();
@@ -178,11 +224,17 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
 
   // 2. 최신 게임 상태에서 내 정보 갱신 및 대기실 리셋 처리
   useEffect(() => {
-    const savedToken = localStorage.getItem(TOKEN_KEY) || player?.token;
+    const session = getStoredSession();
+    const savedToken = session?.playerId || localStorage.getItem(TOKEN_KEY) || player?.token;
     if (savedToken) {
-      const me = gameState.players.find(p => p.token === savedToken);
+      const me = gameState.players.find(p => p.token === savedToken || p.id === savedToken);
       if (me) {
         setPlayer(me);
+        // 답안 선택 복원 (진행 중 라운드인 경우)
+        if (gameState.status === 'IN_ROUND' && me.selectedAnswer !== undefined) {
+          setSelectedOption(me.selectedAnswer);
+          setIsSubmitted(true);
+        }
       }
     }
 
@@ -227,6 +279,33 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
       setRoundResult(result);
     };
 
+    const handleReconnectSuccess = (data: { player: Player; state: GameState }) => {
+      if (data && data.player) {
+        setPlayer(data.player);
+        setIsReconnecting(false);
+        if (data.player.selectedAnswer !== undefined) {
+          setSelectedOption(data.player.selectedAnswer);
+          setIsSubmitted(true);
+        }
+        const newSession = {
+          playerId: data.player.token,
+          nickname: data.player.nickname,
+          channel: currentChannel
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+        localStorage.setItem(TOKEN_KEY, data.player.token);
+        if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', data.player.token);
+      }
+    };
+
+    const handleReconnectFailed = () => {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
+      setPlayer(null);
+      setIsReconnecting(false);
+    };
+
     const handleChatMessage = (msg: ChatMessage) => {
       setChatMessages((prev) => [...prev.slice(-49), msg]);
       setUnreadCount((c) => c + 1);
@@ -263,9 +342,11 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     };
 
     const handlePlayerKickedAll = () => {
+      localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(TOKEN_KEY);
       if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
       setPlayer(null);
+      setIsReconnecting(false);
       setRoundInfo(undefined);
       setRoundResult(undefined);
       setSelectedOption(null);
@@ -275,6 +356,8 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
 
     socket.on('game:round_started', handleRoundStart);
     socket.on('game:round_ended', handleRoundEnd);
+    socket.on('player:reconnect_success', handleReconnectSuccess);
+    socket.on('player:reconnect_failed', handleReconnectFailed);
     socket.on('chat:message', handleChatMessage);
     socket.on('chat:history', handleChatHistory);
     socket.on('chat:cleared', handleChatCleared);
@@ -284,6 +367,8 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     return () => {
       socket.off('game:round_started', handleRoundStart);
       socket.off('game:round_ended', handleRoundEnd);
+      socket.off('player:reconnect_success', handleReconnectSuccess);
+      socket.off('player:reconnect_failed', handleReconnectFailed);
       socket.off('chat:message', handleChatMessage);
       socket.off('chat:history', handleChatHistory);
       socket.off('chat:cleared', handleChatCleared);
@@ -323,9 +408,16 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     socket.emit('player:join', { nickname: nicknameInput.trim() }, (res) => {
       if (res.success && res.player) {
         setPlayer(res.player);
+        const newSession = {
+          playerId: res.player.token,
+          nickname: res.player.nickname,
+          channel: currentChannel
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
         localStorage.setItem(TOKEN_KEY, res.player.token);
         if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', res.player.token);
         localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
+        setIsReconnecting(false);
         try {
           window.history.pushState({ inLobby: true }, '', window.location.href);
         } catch { }
@@ -418,6 +510,46 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) =>
     overflowX: 'hidden',
     overflowY: 'auto'
   };
+
+  // 0. 세션 자동 복원 진행 중 화면
+  if (isReconnecting && !player) {
+    return (
+      <div style={{ ...mobileContainerStyle, justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ padding: '20px 0', width: '100%' }}>
+          <div style={{ fontSize: '3.2rem', marginBottom: '16px', display: 'inline-block', animation: 'pulse 1.5s infinite' }}>🔄</div>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid #6366f1', padding: '4px 14px', borderRadius: '20px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#a5b4fc' }}>
+                📡 {CHANNEL_NAMES[currentChannel]}
+              </span>
+            </div>
+          </div>
+          <h2 style={{ fontSize: '1.45rem', color: '#f8fafc', fontWeight: 800, marginBottom: '8px' }}>
+            게임 세션 복원 중...
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '28px', lineHeight: 1.5 }}>
+            이전 참가 정보 및 점수를 동기화하고 있습니다.<br />잠시만 기다려주세요.
+          </p>
+          <button
+            type="button"
+            onClick={() => handleLeaveLobby(false)}
+            style={{
+              background: 'transparent',
+              border: '1px solid #475569',
+              color: '#94a3b8',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            새 닉네임으로 새로 참가하기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // 1. 미입장 상태: 참가 폼
   if (!player) {

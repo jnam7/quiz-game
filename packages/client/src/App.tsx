@@ -5,13 +5,24 @@ import { PlayerView } from './views/PlayerView';
 import { TvView } from './views/TvView';
 import { AdminView } from './views/AdminView';
 
+const getInitialChannel = (): ChannelId => {
+  const urlCh = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ch') : null;
+  if (urlCh) return normalizeChannel(urlCh);
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('quiz_player_session') : null;
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.channel) return normalizeChannel(s.channel);
+    }
+  } catch {}
+  return 'ch1';
+};
+
 export default function App() {
-  const [channel, setChannel] = useState<ChannelId>(() => {
-    return normalizeChannel(new URLSearchParams(window.location.search).get('ch'));
-  });
+  const [channel, setChannel] = useState<ChannelId>(getInitialChannel);
 
   const [gameState, setGameState] = useState<GameState>({
-    channel: normalizeChannel(new URLSearchParams(window.location.search).get('ch')),
+    channel: getInitialChannel(),
     gameId: '',
     status: 'WAITING',
     currentRound: 0,
@@ -51,7 +62,7 @@ export default function App() {
 
   useEffect(() => {
     document.title = '서바이벌 퀴즈쇼';
-    const initialCh = normalizeChannel(new URLSearchParams(window.location.search).get('ch'));
+    const initialCh = getInitialChannel();
     setChannel(initialCh);
 
     socket.connect();
@@ -63,30 +74,15 @@ export default function App() {
 
     const handlePopState = () => {
       setPath(window.location.pathname);
-      const ch = normalizeChannel(new URLSearchParams(window.location.search).get('ch'));
+      const ch = getInitialChannel();
       setChannel(ch);
       socket.emit('channel:join', { channel: ch });
     };
     window.addEventListener('popstate', handlePopState);
 
-    // 모바일 브라우저 닫기/새로고침 시 소켓 즉시 정리
-    const handleUnload = () => {
-      const token = localStorage.getItem(`quiz_survival_player_token_${initialCh}`) || localStorage.getItem('quiz_survival_player_token');
-      if (token) {
-        try {
-          socket.emit('player:leave', { token });
-          socket.disconnect();
-        } catch {}
-      }
-    };
-    window.addEventListener('beforeunload', handleUnload);
-    window.addEventListener('pagehide', handleUnload);
-
     return () => {
       socket.off('game:state_sync');
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('beforeunload', handleUnload);
-      window.removeEventListener('pagehide', handleUnload);
       socket.disconnect();
     };
   }, []);
