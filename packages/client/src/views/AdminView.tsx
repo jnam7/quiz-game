@@ -792,6 +792,37 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState, channel, onChan
 
           {/* 우측: 퀵 액션 & 비상 초기화 버튼 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* TV 전광판 바로가기 (새 탭) */}
+            <button
+              onClick={() => {
+                const ch = (activeChannel || 'ch1').replace('ch', '');
+                window.open(`/tv?ch=${ch}`, '_blank');
+              }}
+              style={{
+                height: '36px',
+                padding: '0 12px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: 'white',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                borderRadius: '8px',
+                boxShadow: '0 2px 10px rgba(99, 102, 241, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer',
+                border: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              title={`현재 ${CHANNEL_NAMES[activeChannel]} TV 전광판 화면을 새 탭으로 엽니다 (현장 빔프로젝터/모니터 송출용)`}
+            >
+              <span>📺</span>
+              <span>TV 전광판 열기</span>
+            </button>
+
             <button
               onClick={() => {
                 setShowPwChangeModal(true);
