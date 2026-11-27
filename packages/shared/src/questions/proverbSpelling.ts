@@ -1,0 +1,1604 @@
+import { QuizItem } from '../types';
+
+export const PROVERB_SPELLING_QUESTIONS: QuizItem[] = [
+  {
+    "id": "q_proverb_spell_001",
+    "question": "'낮말은 새가 듣고 밤말은 ( )이/가 듣는다' 속담의 빈칸은?",
+    "options": [
+      "소",
+      "쥐",
+      "개",
+      "말"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "비밀은 언제든 새어 나가기 쉬우므로 말을 항상 조심하라는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_002",
+    "question": "다음 중 한글 맞춤법상 올바른 표기는 무엇인가?",
+    "options": [
+      "왠일이니",
+      "웬일이니",
+      "왠일인지",
+      "웬일일까"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'어찌 된 일'의 뜻일 때는 '웬일'이 맞고, '왜인지'의 준말일 때만 '왠지'로 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_003",
+    "question": "'호랑이도 제 말 하면 ( )' 속담의 올바른 마무리는?",
+    "options": [
+      "도망간다",
+      "잡아먹는다",
+      "온다",
+      "운다"
+    ],
+    "answerIndex": 2,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "남의 이야기를 하고 있을 때 공교롭게 그 사람이 나타남을 이르는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_004",
+    "question": "다음 중 맞춤법이 올바른 단어는?",
+    "options": [
+      "깨끗히",
+      "깨끗이",
+      "깨끗이도",
+      "깨끗타"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "받침이 'ㅅ'으로 끝나는 어근 뒤에는 부사화 접미사 '-이'가 붙어 '깨끗이'가 표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_005",
+    "question": "'등잔 밑이 ( )' 속담의 알맞은 말은?",
+    "options": [
+      "밝다",
+      "어둡다",
+      "따뜻하다",
+      "위험하다"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "가까이 있는 것을 도리어 알아내기 어렵다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_006",
+    "question": "'어젯밤에 친구를 (만났다/만낫다)' 중 올바른 표기는?",
+    "options": [
+      "만났다",
+      "만낫다",
+      "맛났다",
+      "맞났다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "과거시제 선어말어미 '-았/었-'이 붙어 '만났다'가 올바른 표기입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_007",
+    "question": "'소 잃고 ( ) 고친다' 속담의 빈칸은?",
+    "options": [
+      "대문",
+      "외양간",
+      "지붕",
+      "울타리"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "일을 그르친 뒤에 뉘우쳐 보아야 이미 소용없다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_008",
+    "question": "다음 중 올바른 맞춤법 표현은 어느 것인가?",
+    "options": [
+      "어떻해",
+      "어떡해",
+      "어떻게해",
+      "어떠케"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'어떻게 해'의 준말은 '어떡해'가 맞습니다. 문장 끝에는 '어떡해'를 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_009",
+    "question": "'가는 말이 고와야 ( ) 말이 곱다' 속담의 빈칸은?",
+    "options": [
+      "받는",
+      "오는",
+      "듣는",
+      "하는"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "내가 남에게 좋게 대해야 남도 나에게 좋게 대한다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_010",
+    "question": "'시간이 너무 (빨리/빨이) 지나간다' 중 맞는 표기는?",
+    "options": [
+      "빨리",
+      "빨이",
+      "빨늬",
+      "빨히"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "부사 '빨리'가 표준어 표기입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_011",
+    "question": "'발 없는 말이 ( ) 간다' 속담의 빈칸은?",
+    "options": [
+      "백 리",
+      "천 리",
+      "만 리",
+      "구만 리"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "말(소문)은 순식간에 멀리 퍼져 나가므로 언행을 삼가야 한다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_012",
+    "question": "'감기에 걸리지 않도록 몸조리 (잘 하세요/잘하세요)'에서 올바른 띄어쓰기는?",
+    "options": [
+      "잘 하세요",
+      "잘하세요",
+      "잘, 하세요",
+      "잘-하세요"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'건강에 유의하다'의 뜻을 가진 동사 '잘하다'는 한 단어로 붙여 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_013",
+    "question": "'금강산도 ( )' 속담의 빈칸에 알맞은 말은?",
+    "options": [
+      "식후경",
+      "경치경",
+      "등산경",
+      "산수경"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 좋은 구경이라도 배가 불러야 즐길 수 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_014",
+    "question": "다음 중 맞춤법이 올바른 것은?",
+    "options": [
+      "금새 바뀌었다",
+      "금세 바뀌었다",
+      "금세이",
+      "금세로"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'금시에'의 준말이므로 '금세'가 바른 표기입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_015",
+    "question": "'우물 안 ( )' 속담의 빈칸에 들어갈 동물은?",
+    "options": [
+      "개구리",
+      "올챙이",
+      "미꾸라지",
+      "붕어"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "견문이 좁아 세상 물정을 모르는 사람을 비유합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_016",
+    "question": "'시험을 망쳐서 기분이 (안 좋다/않 좋다)' 중 바른 표기는?",
+    "options": [
+      "안 좋다",
+      "않 좋다",
+      "안좋다",
+      "않좋다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'아니(부사)'의 준말은 '안'이므로 '안 좋다'로 띄어 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_017",
+    "question": "'티끌 모아 ( )' 속담의 빈칸은?",
+    "options": [
+      "태산",
+      "황금",
+      "바위",
+      "모래성"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 작은 것이라도 모이면 큰 덩어리가 된다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_018",
+    "question": "'그는 성격이 정말 (무난하다/문안하다)' 중 올바른 표기는?",
+    "options": [
+      "무난하다",
+      "문안하다",
+      "무란하다",
+      "물안하다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "별다른 흠이나 어려움이 없다는 뜻의 형용사는 '무난(無難)하다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_019",
+    "question": "'누워서 ( ) 먹기' 속담의 빈칸은?",
+    "options": [
+      "떡",
+      "밥",
+      "사과",
+      "죽"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "하기가 매우 쉬운 일을 비유하는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_020",
+    "question": "'약속 시간을 (잊어버렸다/잃어버렸다)' 중 올바른 단어는?",
+    "options": [
+      "잊어버렸다",
+      "잃어버렸다",
+      "잊져버렸다",
+      "잃져버렸다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "기억을 지우거나 잊는 것은 '잊어버리다', 물건을 분실하는 것은 '잃어버리다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_021",
+    "question": "'원숭이도 ( )에서 떨어진다' 속담의 빈칸은?",
+    "options": [
+      "바위",
+      "지붕",
+      "나무",
+      "절벽"
+    ],
+    "answerIndex": 2,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 익숙하고 능숙한 사람이라도 실수할 때가 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_022",
+    "question": "다음 중 올바른 표준어는 어느 것인가?",
+    "options": [
+      "설거지",
+      "설겆이",
+      "설거치",
+      "설궂이"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어원이 분명하지 않아 원형을 밝히지 않고 '설거지'로 적습니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_023",
+    "question": "'고래 싸움에 ( ) 등 터진다' 속담의 빈칸에 들어갈 동물은?",
+    "options": [
+      "멸치",
+      "새우",
+      "오징어",
+      "게"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "강자들의 싸움에 끼어 약자가 억울하게 피해를 입음을 이르는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_024",
+    "question": "'어디에 가든지 (늴리리야/일찌기/오뚝이)' 중 맞춤법이 맞는 단어는?",
+    "options": [
+      "일찌기",
+      "오뚝이",
+      "오뚜기",
+      "홀홀단신"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "부사 '오뚝'에 접미사 '-이'가 붙어 '오뚝이'가 표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_025",
+    "question": "'세 살 버릇 ( )까지 간다' 속담의 빈칸은?",
+    "options": [
+      "예순",
+      "일흔",
+      "여든",
+      "아흔"
+    ],
+    "answerIndex": 2,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어릴 때 몸에 밴 나쁜 습관은 늙어서까지 고치기 어렵다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_026",
+    "question": "'그 소식을 듣고 정말 (어이없었다/어의없었다)' 중 바른 표기는?",
+    "options": [
+      "어이없었다",
+      "어의없었다",
+      "어이업섯다",
+      "어의업섯다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "너무 뜻밖이어서 기가 막히다는 뜻은 '어이없다'가 표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_027",
+    "question": "'아니 땐 ( )에 연기 날까' 속담의 빈칸은?",
+    "options": [
+      "화로",
+      "굴뚝",
+      "아궁이",
+      "온돌"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "원인이 없으면 결과가 생길 수 없다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_028",
+    "question": "'오늘 점심은 칼국수를 (먹을게/먹을께)' 중 올바른 맞춤법은?",
+    "options": [
+      "먹을게",
+      "먹을께",
+      "먹을꼐",
+      "먹을끠"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "약속이나 의지를 나타내는 어미는 소리는 [께]로 나도 '-ㄹ게'로 표기합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_029",
+    "question": "'백지장도 ( ) 낫다' 속담의 빈칸은?",
+    "options": [
+      "맞들면",
+      "접으면",
+      "찢으면",
+      "버리면"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 쉬운 일이라도 함께 힘을 합치면 훨씬 수월하다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_030",
+    "question": "'옷에 국물이 (튀겼다/튀었다)' 중 올바른 표기는?",
+    "options": [
+      "튀겼다",
+      "튀었다",
+      "틔었다",
+      "퇴었다"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "방울이나 가루가 흩어져 묻는 것은 자동사 '튀다(튀었다)'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_031",
+    "question": "'뱁새가 ( ) 따라가다 가랑이 찢어진다' 속담의 빈칸은?",
+    "options": [
+      "황새",
+      "두루미",
+      "타조",
+      "학"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "자신의 분수에 넘치는 일을 억지로 흉내 내면 큰 화를 입는다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_032",
+    "question": "'너 내일 시간 (되니/돼니)?' 중 올바른 표기는?",
+    "options": [
+      "되니",
+      "돼니",
+      "되이니",
+      "돼어니"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'되-' 뒤에 자음 어미 '-니'가 붙을 때는 '되니'로 적습니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_033",
+    "question": "'벼는 익을수록 ( )을 숙인다' 속담의 빈칸은?",
+    "options": [
+      "고개",
+      "허리",
+      "머리",
+      "손"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "사람은 학문과 인격이 깊어질수록 더욱 겸손해져야 한다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_034",
+    "question": "다음 중 맞춤법이 올바른 단어는 무엇인가?",
+    "options": [
+      "희안하다",
+      "희한하다",
+      "희한타",
+      "희안타"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "드물고 신기하다는 뜻의 한자어는 '희한(稀罕)하다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_035",
+    "question": "'말 한마디로 ( ) 빚도 갚는다' 속담의 빈칸은?",
+    "options": [
+      "백 냥",
+      "천 냥",
+      "만 냥",
+      "억만금"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "말을 조리 있게 잘하면 큰 어려움도 해결할 수 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_036",
+    "question": "'할머니께 (안부 인사/문안 인사)를 드리다' 중 바른 한자어 표기는?",
+    "options": [
+      "문안 인사",
+      "무난 인사",
+      "물안 인사",
+      "문한 인사"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "웃어른께 안부를 여쭙는 인사는 '문안(問安) 인사'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_037",
+    "question": "'달면 삼키고 쓰면 ( )' 속담의 빈칸은?",
+    "options": [
+      "버린다",
+      "뱉는다",
+      "감춘다",
+      "울린다"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "자신의 이익에 따라 의리 없이 행동함을 비판하는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_038",
+    "question": "'지금 당장 (시행할께요/시행할게요)' 중 올바른 표기는?",
+    "options": [
+      "시행할께요",
+      "시행할게요",
+      "시행할꼐요",
+      "시행할개요"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "종결 어미 '-ㄹ게요'는 예사소리로 적는 것이 원칙입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_039",
+    "question": "'윗물이 맑아야 ( )이 맑다' 속담의 빈칸은?",
+    "options": [
+      "아랫물",
+      "시냇물",
+      "강물",
+      "바닷물"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "윗사람이 모범을 보여야 아랫사람도 올바르게 행동한다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_040",
+    "question": "'그는 며칠 동안 (밤새도록/밤새도록이) 공부했다'에서 알맞은 부사어는?",
+    "options": [
+      "밤새도록",
+      "밤새도록이",
+      "밤새우도록",
+      "밤새미"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'밤이 다 지나도록'의 뜻은 '밤새도록'이 올바릅니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_041",
+    "question": "'가는 날이 ( )' 속담의 빈칸은?",
+    "options": [
+      "장날",
+      "생일",
+      "휴일",
+      "제삿날"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "뜻하지 않은 우연한 일을 만났을 때 쓰는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_042",
+    "question": "'성적을 (올바르게/올바르개) 매겼다' 중 맞는 것은?",
+    "options": [
+      "올바르게",
+      "올바르개",
+      "올발르게",
+      "올바르꼐"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "형용사 '올바르다'의 어간 뒤에 어미 '-게'가 결합합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_043",
+    "question": "'하늘이 무너져도 ( ) 구멍은 있다' 속담의 빈칸은?",
+    "options": [
+      "숨을",
+      "솟아날",
+      "도망갈",
+      "빠져나갈"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 큰 재난이나 어려움에 처해도 살아날 방법은 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_044",
+    "question": "'그 이야기는 (절대로/절대루) 비밀이야' 중 표준어는?",
+    "options": [
+      "절대로",
+      "절대루",
+      "절때로",
+      "절때루"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "표준어 규정상 '절대로'가 올바른 표기입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_045",
+    "question": "'가재는 ( ) 편이라' 속담의 빈칸에 들어갈 동물은?",
+    "options": [
+      "물고기",
+      "게",
+      "새우",
+      "자라"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "모양이나 처지가 비슷한 사람끼리 한편이 됨을 이르는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_046",
+    "question": "'날씨가 (시원하대/시원하데)'에서 남에게 들은 말을 전할 때 어미는?",
+    "options": [
+      "-대",
+      "-데",
+      "-래",
+      "-네"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "남이 한 말을 간접 전달할 때는 '-다고 해'의 준말인 '-대'를 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_047",
+    "question": "'똥 묻은 개가 ( ) 묻은 개 나무란다' 속담의 빈칸은?",
+    "options": [
+      "재",
+      "흙",
+      "겨",
+      "풀"
+    ],
+    "answerIndex": 2,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "자신의 더 큰 허물은 모르고 남의 사소한 잘못을 탓함을 비유합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_048",
+    "question": "'그 사람은 참 (염치없다/얌치없다)' 중 올바른 표준어는?",
+    "options": [
+      "염치없다",
+      "얌치없다",
+      "영치없다",
+      "염치업다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "부끄러움을 아는 마음이 없다는 표준어는 '염치없다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_049",
+    "question": "'남의 떡이 더 ( ) 보인다' 속담의 빈칸은?",
+    "options": [
+      "맛있어",
+      "달아",
+      "커",
+      "예뻐"
+    ],
+    "answerIndex": 2,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "남의 것이 자신의 것보다 더 좋아 보인다는 심리를 나타냅니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_050",
+    "question": "'어머니께 안부 전화를 (드렸어요/드렸서요)' 중 바른 표기는?",
+    "options": [
+      "드렸어요",
+      "드렸서요",
+      "드렷서요",
+      "드렷어요"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'드리다'의 과거형 어간 '드렸-'에 어미 '-어요'가 결합합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_051",
+    "question": "'도둑이 제 발 ( )' 속담의 빈칸은?",
+    "options": [
+      "저린다",
+      "아프다",
+      "삐었다",
+      "시리다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "죄를 지은 자는 스스로 불안해하여 들키기 전에 정체를 드러낸다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_052",
+    "question": "'그 일은 내가 (알아서 할게/알아서 할께)' 중 올바른 것은?",
+    "options": [
+      "알아서 할게",
+      "알아서 할께",
+      "알아서 할꼐",
+      "알어서 할게"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "종결 어미 '-ㄹ게'는 소리는 된소리라도 예사소리로 표기합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_053",
+    "question": "'비 온 뒤에 땅이 ( )' 속담의 빈칸은?",
+    "options": [
+      "굳어진다",
+      "젖는다",
+      "갈라진다",
+      "미끄럽다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어려운 시련을 겪고 난 뒤에 더 단단해지고 발전한다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_054",
+    "question": "'음식이 입맛에 (맞춤/맞음)' 중 동사 어간 활용으로 옳은 것은?",
+    "options": [
+      "맞음",
+      "맞춤",
+      "맛음",
+      "마즘"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'입맛에 맞다'의 명사형은 '맞음'입니다. ('맞춤'은 양복 등을 맞출 때 씀)",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_055",
+    "question": "'모르는 게 ( )' 속담의 빈칸은?",
+    "options": [
+      "상책",
+      "약",
+      "보약",
+      "은혜"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무것도 모르면 도리어 마음이 편하고 걱정이 없다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_056",
+    "question": "'오늘은 왠지 피곤하다'에서 '왠지'의 맞춤법은 맞는가?",
+    "options": [
+      "맞다",
+      "틀리다 (웬지가 맞음)",
+      "틀리다 (웬일이 맞음)",
+      "외인지가 맞음"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'왜 그런지 모르게'의 뜻인 '왜인지'의 준말은 '왠지'가 맞습니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_057",
+    "question": "'고진( )래: 쓴 것이 다하면 단 것이 온다' 사자성어의 빈칸은?",
+    "options": [
+      "감",
+      "당",
+      "락",
+      "통"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "고생 끝에 낙이 온다는 뜻의 사자성어는 고진감래(苦盡甘來)입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_058",
+    "question": "'그는 자신의 실수를 (깨달았다/깨달았다/깨달앗다)' 중 올바른 표기는?",
+    "options": [
+      "깨달았다",
+      "깨닫았다",
+      "깨달앗다",
+      "깨닸았다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'깨닫다'는 'ㄷ 불규칙' 용언으로 모음 어미 앞에서 '깨달았다'로 바뀝니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_059",
+    "question": "'사공이 많으면 배가 ( )으로 간다' 속담의 빈칸은?",
+    "options": [
+      "산",
+      "바다",
+      "강",
+      "하늘"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "주관하는 사람이 너무 많으면 일이 엉뚱한 방향으로 흘러감을 비유합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_060",
+    "question": "'바람에 날려 (나뭇가지/나무가지)가 부러졌다' 중 올바른 표준어는?",
+    "options": [
+      "나뭇가지",
+      "나무가지",
+      "나무까지",
+      "나뭇까지"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "순우리말 합성어로 뒷말의 첫소리가 된소리로 나므로 사이시옷을 받쳐 '나뭇가지'로 씁니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_061",
+    "question": "'벼룩의 ( )을 내어 먹는다' 속담의 빈칸은?",
+    "options": [
+      "간",
+      "창자",
+      "다리",
+      "쓸개"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "지극히 적은 이익을 탐내어 가난한 자의 것을 빼앗음을 비난하는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_062",
+    "question": "'약속 날짜를 (며칠/몇일)로 잡을까?' 중 올바른 표기는?",
+    "options": [
+      "며칠",
+      "몇일",
+      "몇 일",
+      "며 칠"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "현대 국어에서는 '몇 일'이 아닌 '며칠'만이 표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_063",
+    "question": "'쇠귀에 ( ) 읽기' 속담의 빈칸은?",
+    "options": [
+      "경",
+      "책",
+      "신문",
+      "편지"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 가르쳐 주어도 알아듣지 못함을 이르는 우이독경(牛耳讀經) 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_064",
+    "question": "'그는 약속 시간에 (늘상/늘) 늦는다' 중 바른 표준어는?",
+    "options": [
+      "늘",
+      "늘상",
+      "늘상히",
+      "늘르"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'언제나'의 표준어는 '늘'이며, '늘상'은 비표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_065",
+    "question": "'개천에서 ( ) 난다' 속담의 빈칸은?",
+    "options": [
+      "용",
+      "잉어",
+      "봉황",
+      "호랑이"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어려운 환경에서도 훌륭한 인물이 배출됨을 이르는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_066",
+    "question": "'방이 너무 (지저분하다/지져분하다)' 중 바른 맞춤법은?",
+    "options": [
+      "지저분하다",
+      "지져분하다",
+      "찌저분하다",
+      "지접하다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어수선하고 너저분하다는 뜻은 '지저분하다'가 맞습니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_067",
+    "question": "'우물가에서 ( ) 찾는다' 속담의 빈칸은?",
+    "options": [
+      "숭늉",
+      "물",
+      "두레박",
+      "물고기"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "일의 순서도 모르고 성급하게 서두름을 비유하는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_068",
+    "question": "'아기를 품에 (안아 주었다/않아 주었다)' 중 바른 표기는?",
+    "options": [
+      "안아 주었다",
+      "않아 주었다",
+      "안아주엇다",
+      "않어 주었다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "품에 품는 동사는 '안다(안아)'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_069",
+    "question": "'닭 잡아먹고 ( ) 내민다' 속담의 빈칸은?",
+    "options": [
+      "오리발",
+      "닭발",
+      "거위발",
+      "비둘기발"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "자신이 저지른 잘못을 엉뚱한 핑계로 속이려 함을 비유합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_070",
+    "question": "'문제를 (맞히다/맞추다)'에서 정답을 골라내는 행위의 올바른 단어는?",
+    "options": [
+      "맞히다",
+      "맞추다",
+      "마치다",
+      "맛히다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "정답을 골라 적중시키는 것은 '맞히다', 둘을 서로 비교하는 것은 '맞추다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_071",
+    "question": "'등잔 밑이 어둡다'와 뜻이 가장 가까운 한자성어는?",
+    "options": [
+      "등하불명",
+      "새옹지마",
+      "오리무중",
+      "동문서답"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "등하불명(燈下不明)은 등불 아래가 도리어 어둡다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_072",
+    "question": "'어디서 뵈었는지 (뵘/뵘직/봬요)' 중 존칭 종결형으로 맞는 것은?",
+    "options": [
+      "다음에 봬요",
+      "다음에 배요",
+      "다음에 뵈요",
+      "다음에 뵈어요"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'뵈어요'의 준말 형태는 '봬요'가 맞습니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_073",
+    "question": "'호미로 막을 것을 ( )로 막는다' 속담의 빈칸은?",
+    "options": [
+      "가래",
+      "삽",
+      "포클레인",
+      "불도저"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "작은 일일 때 미리 처리하지 않아 나중에 큰 힘을 들이게 됨을 뜻합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_074",
+    "question": "'성격이 (털털하다/털털치않다)' 중 올바른 표기는?",
+    "options": [
+      "털털하다",
+      "털터리하다",
+      "털털스런",
+      "덜덜하다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "소탈하고 수더분한 성격을 나타내는 표준어는 '털털하다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_075",
+    "question": "'달리는 말에 ( )질 한다' 속담의 빈칸은?",
+    "options": [
+      "채찍",
+      "당근",
+      "발길",
+      "고삐"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "열심히 하고 있는 사람을 더욱 격려하여 더 잘하게 부추김을 뜻합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_076",
+    "question": "'머리를 단정하게 (빗다/빚다)' 중 머리칼을 다듬을 때 쓰는 동사는?",
+    "options": [
+      "빗다",
+      "빚다",
+      "빛다",
+      "삣다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "머리칼을 빗으로 가지런히 하는 것은 '빗다', 만두나 술을 만드는 것은 '빚다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_077",
+    "question": "'열 번 찍어 안 넘어가는 ( ) 없다' 속담의 빈칸은?",
+    "options": [
+      "나무",
+      "바위",
+      "장벽",
+      "사람"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "끈기 있게 노력하면 아무리 어려운 일이라도 결국 이룰 수 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_078",
+    "question": "'바람을 쐬니 머리가 (개운하다/개안하다)' 중 바른 표준어는?",
+    "options": [
+      "개운하다",
+      "개안하다",
+      "개온하다",
+      "개운타"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "상쾌하고 가뜬한 기분을 나타내는 표준어는 '개운하다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_079",
+    "question": "'쥐구멍에도 ( ) 들 날 있다' 속담의 빈칸은?",
+    "options": [
+      "볕",
+      "달",
+      "바람",
+      "물"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "가난하고 고생스러운 처지에도 언젠가 좋은 날이 올 수 있다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_080",
+    "question": "'김치를 통에 (담그다/담그았다/담궜다)'의 올바른 과거형은?",
+    "options": [
+      "담갔다",
+      "담궜다",
+      "담가았다",
+      "담겼다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'담그다'의 어간 '담그-'에 '-았-'이 붙으면 'ㅡ'가 탈락하여 '담갔다'가 됩니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_081",
+    "question": "'미운 놈 ( ) 하나 더 준다' 속담의 빈칸은?",
+    "options": [
+      "떡",
+      "밥",
+      "돈",
+      "매"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "미운 사람일수록 더 너그럽고 후하게 대해야 후환이 없다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_082",
+    "question": "'그는 나를 보고 (아는 체했다/아는 척했다)'의 띄어쓰기는?",
+    "options": [
+      "아는 체했다",
+      "아는체했다",
+      "아는체 했다",
+      "둘 다 허용"
+    ],
+    "answerIndex": 3,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "본용언과 보조용언 구성으로 띄어 쓰는 것이 원칙, 붙여 쓰는 것도 허용됩니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_083",
+    "question": "'빛 좋은 ( )' 속담의 빈칸은?",
+    "options": [
+      "개살구",
+      "수박",
+      "사과",
+      "복숭아"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "겉모습만 그럴듯하고 실속은 전혀 없음을 비유하는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_084",
+    "question": "'가방을 어깨에 (메다/매다)' 중 어깨에 걸치는 동사는?",
+    "options": [
+      "메다",
+      "매다",
+      "몌다",
+      "미다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "어깨에 걸치는 것은 '메다', 끈이나 넥타이를 묶는 것은 '매다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_085",
+    "question": "'마른하늘에 ( )' 속담의 빈칸은?",
+    "options": [
+      "벼락",
+      "비",
+      "구름",
+      "눈"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "뜻밖에 당하는 큰 재난이나 불행을 비유하는 말입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_086",
+    "question": "'그의 성공은 정말 (놀라울 만하다/놀라울만하다)'의 올바른 원칙 띄어쓰기는?",
+    "options": [
+      "놀라울 만하다",
+      "놀라울만하다",
+      "놀라울, 만하다",
+      "놀라울-만하다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "의존명사 '만'과 보조형용사 '하다'의 결합이므로 띄어 쓰는 것이 원칙입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_087",
+    "question": "'누울 자리 봐 가며 ( ) 뻗어라' 속담의 빈칸은?",
+    "options": [
+      "다리",
+      "팔",
+      "몸",
+      "손"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "결과나 상황을 잘 살핀 뒤에 행동하라는 가르침입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_088",
+    "question": "'피로가 풀리지 않아 온몸이 (찌뿌둥하다/찌뿌둥치않다)'의 바른 표기는?",
+    "options": [
+      "찌뿌둥하다",
+      "찌뿌둥치않다",
+      "찌뿌듯하다",
+      "둘 다 표준어"
+    ],
+    "answerIndex": 3,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'찌뿌둥하다'와 '찌뿌듯하다'는 모두 복수 표준어입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_089",
+    "question": "'돌다리도 ( ) 건너라' 속담의 빈칸은?",
+    "options": [
+      "두들겨 보고",
+      "보고",
+      "살피고",
+      "걸어서"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "아무리 잘 아는 안전한 일이라도 세심하게 확인하라는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_090",
+    "question": "'그는 몹시 (설레는/설레이는) 마음으로 출발했다' 중 바른 표준어는?",
+    "options": [
+      "설레는",
+      "설레이는",
+      "설레는듯",
+      "설래는"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "기본형은 '설레다'이므로 관형사형은 '설레는'이 맞습니다. ('설레이다'는 비표준어)",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_091",
+    "question": "'가는 정이 있어야 ( ) 정이 있다' 속담의 빈칸은?",
+    "options": [
+      "오는",
+      "받는",
+      "주는",
+      "있는"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "내가 먼저 친절을 베풀어야 남도 나에게 호의를 보인다는 뜻입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_092",
+    "question": "'방안에 먼지가 (수북이/수북히) 쌓였다' 중 바른 표기는?",
+    "options": [
+      "수북이",
+      "수북히",
+      "수북이도",
+      "수부기"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "'ㄱ' 받침으로 끝나는 부사 뒤에는 '-이'가 붙어 '수북이'로 표기합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_093",
+    "question": "'낫 놓고 ( )자도 모른다' 속담의 빈칸에 들어갈 한글 자음은?",
+    "options": [
+      "기역(ㄱ)",
+      "니은(ㄴ)",
+      "디귿(ㄷ)",
+      "미음(ㅁ)"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "낫을 보고도 기역 자를 모를 만큼 아주 무식함을 비유하는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_094",
+    "question": "'눈살을 (찌푸리다/찌프리다)' 중 표준어 표기는?",
+    "options": [
+      "찌푸리다",
+      "찌프리다",
+      "찌푸렷다",
+      "찌프렷다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "미간을 찡그리는 행위의 표준어는 '찌푸리다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_095",
+    "question": "'종로에서 뺨 맞고 ( )에서 화풀이한다' 속담의 빈칸은?",
+    "options": [
+      "한강",
+      "남산",
+      "동대문",
+      "마포"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "모욕을 당한 그 자리에서는 아무 말도 못 하다가 엉뚱한 곳에서 성을 냄을 뜻합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_096",
+    "question": "'나에게 돈을 (빌려주었다/빌어주었다)' 중 남에게 빌려주는 올바른 동사는?",
+    "options": [
+      "빌려주었다",
+      "빌어주었다",
+      "빌리여주었다",
+      "빌렷다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "물건이나 돈을 남에게 빌려주는 것은 '빌려주다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_097",
+    "question": "'모래 위에 쌓은 성'을 뜻하는 사자성어로 기초가 부실함을 뜻하는 말은?",
+    "options": [
+      "사상누각",
+      "풍전등화",
+      "배수지진",
+      "일엽편주"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "사상누각(砂上樓閣)은 모래 위에 지은 누각이라는 뜻으로 오래가지 못할 기초를 비유합니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_098",
+    "question": "'가방에 짐을 (싸다/싸이다)'에서 직접 물건을 포장하는 능동사는?",
+    "options": [
+      "싸다",
+      "싸이다",
+      "싸아지다",
+      "싸히다"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "물건을 보자기나 가방에 넣고 묶는 것은 '싸다'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_099",
+    "question": "'하룻강아지 ( ) 무서운 줄 모른다' 속담의 빈칸은?",
+    "options": [
+      "사자",
+      "호랑이",
+      "늑대",
+      "곰"
+    ],
+    "answerIndex": 1,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "철모르고 덤비는 분별없는 행동을 꼬집는 속담입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  },
+  {
+    "id": "q_proverb_spell_100",
+    "question": "'시험 합격의 (비결/비겻)을 알려주다' 중 바른 단어는?",
+    "options": [
+      "비결",
+      "비겻",
+      "비격",
+      "비껼"
+    ],
+    "answerIndex": 0,
+    "category": "속담 및 맞춤법",
+    "difficulty": "medium",
+    "explanation": "남모르는 유효한 방법이나 묘책은 한자어 '비결(秘訣)'입니다.",
+    "timeLimit": 15,
+    "isApproved": true
+  }
+];

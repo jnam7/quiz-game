@@ -70,27 +70,15 @@ export class JsonDatabase {
       try {
         const raw = fs.readFileSync(this.dbPath, 'utf-8');
         const parsed = JSON.parse(raw);
-        this.quizzes = parsed.quizzes || INITIAL_QUIZ_BANK;
-        this.history = parsed.history || [];
-        this.adminPassword = parsed.adminPassword || defaultPw;
-        this.channelPasswords = parsed.channelPasswords || {};
+        // 기존 문제가 구버전(1,000문항 미만 또는 구버전 번호 ID)인 경우 1,000개 큐레이션 문제로 전면 교체
+        const rawQuizzes = Array.isArray(parsed) ? parsed : parsed.quizzes;
+        const isOldBank = !rawQuizzes || rawQuizzes.length < 500 || typeof rawQuizzes[0]?.id === 'number';
+        this.quizzes = isOldBank ? [...INITIAL_QUIZ_BANK] : rawQuizzes;
+        this.history = (!Array.isArray(parsed) && parsed.history) ? parsed.history : [];
+        this.adminPassword = (!Array.isArray(parsed) && parsed.adminPassword) || defaultPw;
+        this.channelPasswords = (!Array.isArray(parsed) && parsed.channelPasswords) || {};
         // 모든 문제의 기본 제한시간을 15초로 동기화
         this.quizzes.forEach(q => { q.timeLimit = 15; });
-
-        // INITIAL_QUIZ_BANK의 신규 문제가 기존 DB에 누락되어 있다면 자동 병합
-        const existingQuestions = new Set(this.quizzes.map(q => q.question.trim()));
-        let addedCount = 0;
-        for (const item of INITIAL_QUIZ_BANK) {
-          if (!existingQuestions.has(item.question.trim())) {
-            const nextId = this.quizzes.reduce((max, cur) => Math.max(max, cur.id), 0) + 1;
-            this.quizzes.push({ ...item, id: nextId });
-            existingQuestions.add(item.question.trim());
-            addedCount++;
-          }
-        }
-        if (addedCount > 0) {
-          console.log(`📚 [문제은행 동기화] 신규 문제 ${addedCount}개가 DB에 자동 추가되었습니다. (총 ${this.quizzes.length}개)`);
-        }
 
         this.saveDatabase();
         return;
@@ -98,7 +86,7 @@ export class JsonDatabase {
         console.error('[DB Load Error] Initializing with default bank:', err);
       }
     }
-    // 최초 실행 시 기본 132개 문제로 초기화
+    // 최초 실행 시 기본 문제로 초기화
     this.quizzes = [...INITIAL_QUIZ_BANK];
     this.history = [];
     this.adminPassword = defaultPw;
@@ -129,12 +117,12 @@ export class JsonDatabase {
     return this.quizzes;
   }
 
-  public getQuizById(id: number): QuizItem | undefined {
-    return this.quizzes.find(q => q.id === id);
+  public getQuizById(id: string | number): QuizItem | undefined {
+    return this.quizzes.find(q => String(q.id) === String(id));
   }
 
   public addQuiz(quiz: Omit<QuizItem, 'id'>): QuizItem {
-    const nextId = this.quizzes.length > 0 ? Math.max(...this.quizzes.map(q => q.id)) + 1 : 1;
+    const nextId = 'q_custom_' + Date.now();
     const newQuiz: QuizItem = { ...quiz, id: nextId };
     this.quizzes.push(newQuiz);
     this.saveDatabase();
@@ -142,16 +130,16 @@ export class JsonDatabase {
   }
 
   public updateQuiz(updated: QuizItem): boolean {
-    const idx = this.quizzes.findIndex(q => q.id === updated.id);
+    const idx = this.quizzes.findIndex(q => String(q.id) === String(updated.id));
     if (idx === -1) return false;
     this.quizzes[idx] = updated;
     this.saveDatabase();
     return true;
   }
 
-  public deleteQuiz(id: number): boolean {
+  public deleteQuiz(id: string | number): boolean {
     const beforeCount = this.quizzes.length;
-    this.quizzes = this.quizzes.filter(q => q.id !== id);
+    this.quizzes = this.quizzes.filter(q => String(q.id) !== String(id));
     if (this.quizzes.length !== beforeCount) {
       this.saveDatabase();
       return true;
@@ -159,8 +147,8 @@ export class JsonDatabase {
     return false;
   }
 
-  public toggleApprove(id: number): boolean {
-    const quiz = this.quizzes.find(q => q.id === id);
+  public toggleApprove(id: string | number): boolean {
+    const quiz = this.quizzes.find(q => String(q.id) === String(id));
     if (!quiz) return false;
     quiz.isApproved = !quiz.isApproved;
     this.saveDatabase();

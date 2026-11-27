@@ -13,21 +13,23 @@ export interface ChannelSummary {
 }
 
 export type QuizCategory =
+  | '일반상식'
   | '일반 상식'
   | '넌센스'
   | '과학 및 역사'
   | '스포츠'
-  | '영화 및 음악'
   | '속담 및 맞춤법'
-  | '회사 생활 및 직장인 유머'
-  | '순발력'
+  | '영화 및 음악'
+  | '함정문제'
   | '함정 문제'
   | '초등상식'
   | '중등상식'
-  | '고등상식';
+  | '고등상식'
+  | '회사 생활 및 직장인 유머'
+  | '순발력';
 
 export interface QuizItem {
-  id: number;
+  id: string | number;
   question: string;
   category: QuizCategory;
   options: [string, string, string, string];
@@ -68,7 +70,7 @@ export interface RoundInfo {
   roundNumber: number;
   stageName: string; // 1라운드(일반상식), 2라운드(눈치/재미), 3라운드(순발력), 4라운드(함정), 최종전(최후의 1인)
   totalRounds: number;
-  quizId: number;
+  quizId: string | number;
   category: QuizCategory;
   question: string;
   options: [string, string, string, string];
@@ -81,7 +83,7 @@ export interface RoundInfo {
 
 export interface RoundResult {
   roundNumber: number;
-  quizId: number;
+  quizId: string | number;
   question?: string;
   options?: [string, string, string, string];
   correctAnswerIndex: number;
@@ -217,8 +219,8 @@ export interface ClientToServerEvents {
   'admin:update_settings': (settings: Partial<GameSettings>) => void;
   'admin:quiz:add': (quiz: Omit<QuizItem, 'id'>, callback: (res: { success: boolean; quiz?: QuizItem }) => void) => void;
   'admin:quiz:update': (quiz: QuizItem, callback: (res: { success: boolean }) => void) => void;
-  'admin:quiz:delete': (id: number, callback: (res: { success: boolean }) => void) => void;
-  'admin:quiz:toggle_approve': (id: number, callback: (res: { success: boolean }) => void) => void;
+  'admin:quiz:delete': (id: string | number, callback: (res: { success: boolean }) => void) => void;
+  'admin:quiz:toggle_approve': (id: string | number, callback: (res: { success: boolean }) => void) => void;
   'admin:play_sound': (soundType: SoundEffectType) => void;
 }
 

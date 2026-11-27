@@ -37,25 +37,23 @@ export const getChannelRoom = (ch: string): string => {
 export const MAX_PLAYERS = 300;
 
 export const ALL_QUIZ_CATEGORIES: QuizCategory[] = [
-  '일반 상식',
+  '일반상식',
   '넌센스',
   '과학 및 역사',
   '스포츠',
-  '영화 및 음악',
   '속담 및 맞춤법',
-  '회사 생활 및 직장인 유머',
-  '순발력',
-  '함정 문제',
+  '영화 및 음악',
+  '함정문제',
   '초등상식',
   '중등상식',
   '고등상식'
 ];
 
 export const DEFAULT_STAGE_RULES: { [round: number]: { timeLimit: number; stageName: string } } = {
-  1: { timeLimit: 15, stageName: '1라운드: 일반 상식' },
-  2: { timeLimit: 15, stageName: '2라운드: 눈치 및 재미' },
-  3: { timeLimit: 15, stageName: '3라운드: 순발력' },
-  4: { timeLimit: 15, stageName: '4라운드: 함정 문제' },
+  1: { timeLimit: 15, stageName: '1라운드: 일반상식' },
+  2: { timeLimit: 15, stageName: '2라운드: 넌센스 & 재미' },
+  3: { timeLimit: 15, stageName: '3라운드: 과학 및 역사' },
+  4: { timeLimit: 15, stageName: '4라운드: 함정문제' },
   5: { timeLimit: 15, stageName: '최종전: 최후의 1인 결승' }
 };
 

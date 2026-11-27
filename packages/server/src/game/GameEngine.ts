@@ -35,7 +35,10 @@ export class GameEngine {
   private players: Map<string, Player> = new Map(); // key: token
   private socketToToken: Map<string, string> = new Map(); // key: socketId -> token
   private disconnectTimers: Map<string, NodeJS.Timeout> = new Map(); // key: token -> 유예 타이머
-  private usedQuizIds: Set<number> = new Set();
+  private usedQuizIds: Set<string | number> = new Set();
+  // 최근 5게임 출제 문제 중복 방지 쿨다운 엔진 (채널별 독립 큐)
+  private recentGameQuestionIds: Array<Array<string | number>> = [];
+  private currentGameQuestionIds: Array<string | number> = [];
   private settings: GameSettings = { ...DEFAULT_SETTINGS };
   private chatHistory: ChatMessage[] = [];
 
@@ -380,6 +383,9 @@ export class GameEngine {
   public startGame(): boolean {
     if (this.players.size < 1) return false;
 
+    // 이전 게임에서 출제된 문제들을 5게임 쿨다운 이력으로 아카이빙
+    this.archiveCurrentGameQuestions();
+
     if (this.roundTimeoutTimer) {
       clearTimeout(this.roundTimeoutTimer);
       this.roundTimeoutTimer = null;
@@ -394,6 +400,7 @@ export class GameEngine {
     this.currentRoundNumber = 0;
     this.activeQuiz = undefined;
     this.usedQuizIds.clear();
+    this.currentGameQuestionIds = [];
     this.gameStartedAt = Date.now();
     this.gameEndedAt = undefined;
 
@@ -570,8 +577,10 @@ export class GameEngine {
 
     // 대기실 또는 게임 종료 상태에서 호출 시 참가자 상태 초기화
     if (this.status === 'WAITING' || this.status === 'GAME_OVER') {
+      this.archiveCurrentGameQuestions();
       this.currentRoundNumber = 0;
       this.usedQuizIds.clear();
+      this.currentGameQuestionIds = [];
       for (const p of this.players.values()) {
         p.isAlive = true;
         p.score = 0;
@@ -601,16 +610,13 @@ export class GameEngine {
       p.answeredAt = undefined;
     }
 
-    // 미사용 문제 우선 추출, 없으면 초기화
-    let available = approvedQuizzes.filter(q => !this.usedQuizIds.has(q.id));
-    if (available.length === 0) {
-      this.usedQuizIds.clear();
-      available = [...approvedQuizzes];
-    }
+    // 5게임 쿨다운 필터링 적용 (문제 부족 시 FIFO 자동 완화)
+    let available = this.filterWithCooldown(approvedQuizzes);
 
     const randomIndex = Math.floor(Math.random() * available.length);
     this.activeQuiz = available[randomIndex];
     this.usedQuizIds.add(this.activeQuiz.id);
+    this.currentGameQuestionIds.push(this.activeQuiz.id);
 
     const timeLimit = this.settings.questionTimeLimit || 15; // 설정된 제한시간 적용 (기본 15초)
     this.roundStartTime = 0;
@@ -642,7 +648,44 @@ export class GameEngine {
     }, readingDuration + 1500);
   }
 
-  // --- 문제 자동 선별 (체크된 카테고리 필터링 & 미사용 우선) ---
+  // --- 최근 5게임 출제 문제 중복 방지 (쿨다운 아카이브 & 필터링) ---
+  private archiveCurrentGameQuestions() {
+    if (this.currentGameQuestionIds.length > 0) {
+      this.recentGameQuestionIds.push([...this.currentGameQuestionIds]);
+      if (this.recentGameQuestionIds.length > 5) {
+        this.recentGameQuestionIds.shift(); // 5게임 초과 시 가장 오래된 게임 기록 제거
+      }
+      console.log(`[Cooldown Archive] ${this.currentGameQuestionIds.length}개 문제 쿨다운 등록 (최근 ${this.recentGameQuestionIds.length}게임 이력 보관)`);
+      this.currentGameQuestionIds = [];
+    }
+  }
+
+  private filterWithCooldown(baseList: QuizItem[]): QuizItem[] {
+    let candidates = baseList.filter(q => !this.usedQuizIds.has(q.id));
+    if (candidates.length === 0) {
+      this.usedQuizIds.clear();
+      candidates = [...baseList];
+    }
+
+    // 5게임 전체 쿨다운 적용 시도 후, 후보가 5문항 미만이면 가장 오래된 기록부터 해제(FIFO)
+    for (let dropOldest = 0; dropOldest <= this.recentGameQuestionIds.length; dropOldest++) {
+      const activeHistory = this.recentGameQuestionIds.slice(dropOldest);
+      const cooldownSet = new Set<string | number>();
+      for (const gameIds of activeHistory) {
+        for (const id of gameIds) {
+          cooldownSet.add(id);
+        }
+      }
+
+      const filtered = candidates.filter(q => !cooldownSet.has(q.id));
+      if (filtered.length >= 5 || dropOldest === this.recentGameQuestionIds.length) {
+        return filtered.length > 0 ? filtered : candidates;
+      }
+    }
+    return candidates;
+  }
+
+  // --- 문제 자동 선별 (체크된 카테고리 필터링 & 최근 5게임 쿨다운 적용) ---
   private selectNextQuiz(): QuizItem | undefined {
     let approvedQuizzes = this.db.getQuizzes(true);
 
@@ -655,26 +698,19 @@ export class GameEngine {
       }
     }
 
-    let available = approvedQuizzes.filter(q => !this.usedQuizIds.has(q.id));
-
-    // 선택된 카테고리의 문제를 모두 사용했다면 초기화 후 재순환
-    if (available.length === 0) {
-      this.usedQuizIds.clear();
-      available = [...approvedQuizzes];
-    }
-
+    let available = this.filterWithCooldown(approvedQuizzes);
     if (available.length === 0) return undefined;
 
     // 단계별 선호 카테고리가 있고, 그 카테고리가 관리자가 체크한 카테고리에 포함된 경우 우선 매칭
     let preferredCategory = '';
-    if (this.currentRoundNumber === 1) preferredCategory = '일반 상식';
+    if (this.currentRoundNumber === 1) preferredCategory = '일반상식';
     else if (this.currentRoundNumber === 2) preferredCategory = '넌센스';
-    else if (this.currentRoundNumber === 3) preferredCategory = '순발력';
-    else if (this.currentRoundNumber === 4) preferredCategory = '함정 문제';
+    else if (this.currentRoundNumber === 3) preferredCategory = '함정문제';
+    else if (this.currentRoundNumber === 4) preferredCategory = '과학 및 역사';
 
     let pool = available;
     if (preferredCategory && (!selectedCats || selectedCats.includes(preferredCategory as any))) {
-      const matched = available.filter(q => q.category === preferredCategory);
+      const matched = available.filter(q => q.category === preferredCategory || q.category.replace(/\s+/g, '') === preferredCategory.replace(/\s+/g, ''));
       if (matched.length > 0) {
         pool = matched;
       }
@@ -683,6 +719,7 @@ export class GameEngine {
     const randomIndex = Math.floor(Math.random() * pool.length);
     const selected = pool[randomIndex];
     this.usedQuizIds.add(selected.id);
+    this.currentGameQuestionIds.push(selected.id);
     return selected;
   }
 
@@ -778,6 +815,7 @@ export class GameEngine {
 
   // --- 게임 종료 처리 ---
   public endGame(winner?: Player, isDraw: boolean = false) {
+    this.archiveCurrentGameQuestions();
     this.status = 'GAME_OVER';
     this.gameEndedAt = Date.now();
 
@@ -887,6 +925,7 @@ export class GameEngine {
   }
 
   public resetGame() {
+    this.archiveCurrentGameQuestions();
     if (this.readingTimeoutTimer) {
       clearTimeout(this.readingTimeoutTimer);
       this.readingTimeoutTimer = null;
@@ -905,6 +944,7 @@ export class GameEngine {
     this.currentRoundNumber = 0;
     this.activeQuiz = undefined;
     this.usedQuizIds.clear();
+    this.currentGameQuestionIds = [];
     this.gameStartedAt = undefined;
     this.gameEndedAt = undefined;
 

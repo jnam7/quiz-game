@@ -477,11 +477,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState, channel, onChan
     });
   };
 
-  const handleToggleApprove = (id: number) => {
+  const handleToggleApprove = (id: string | number) => {
     socket.emit('admin:quiz:toggle_approve', id, () => loadQuizzes());
   };
 
-  const handleDeleteQuiz = (id: number) => {
+  const handleDeleteQuiz = (id: string | number) => {
     if (confirm('이 문제를 삭제하시겠습니까?')) {
       socket.emit('admin:quiz:delete', id, () => loadQuizzes());
     }
