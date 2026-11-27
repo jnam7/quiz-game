@@ -13,7 +13,11 @@ events.EventEmitter.defaultMaxListeners = 500;
 import {
   ClientToServerEvents,
   ServerToClientEvents,
-  SOCKET_ROOM_MAIN
+  SOCKET_ROOM_MAIN,
+  CHANNELS,
+  ChannelId,
+  normalizeChannel,
+  getChannelRoom
 } from '@quiz/shared';
 import { JsonDatabase } from './db/Database';
 import { GameEngine } from './game/GameEngine';
@@ -74,34 +78,42 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   allowEIO3: true
 });
 
-const gameEngine = new GameEngine(database, {
-  emitStateSync: (state) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:state_sync', state); } catch (e) { console.error(e); }
-  },
-  emitPlaySound: (sound) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:play_sound', sound); } catch (e) { console.error(e); }
-  },
-  emitRoundStart: (info) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:round_started', info); } catch (e) { console.error(e); }
-  },
-  emitRoundEnd: (result) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:round_ended', result); } catch (e) { console.error(e); }
-  },
-  emitWinner: (winner, isDraw) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:winner_announced', winner, isDraw); } catch (e) { console.error(e); }
-  },
-  emitStartingCountdown: (seconds) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:starting_countdown', seconds); } catch (e) { console.error(e); }
-  },
-  emitPlayerAnswered: (token, count, totalAlive) => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('player:answered', { token, answerCount: count, totalAlive }); } catch (e) { console.error(e); }
-  },
-  emitForceLobby: () => {
-    try { io.to(SOCKET_ROOM_MAIN).emit('game:force_lobby'); } catch (e) { console.error(e); }
-  }
-});
+// 5개 독립 채널(ch1 ~ ch5) GameEngine 맵 생성 (각 채널별 300인 독립 수용)
+const gameEngines = new Map<ChannelId, GameEngine>();
 
-setupSocketHandlers(io, gameEngine);
+for (const ch of CHANNELS) {
+  const room = getChannelRoom(ch);
+  const engine = new GameEngine(database, {
+    emitStateSync: (state) => {
+      try { io.to(room).emit('game:state_sync', { ...state, channel: ch }); } catch (e) { console.error(`[${ch} emitStateSync Error]:`, e); }
+    },
+    emitPlaySound: (sound) => {
+      try { io.to(room).emit('game:play_sound', sound); } catch (e) { console.error(e); }
+    },
+    emitRoundStart: (info) => {
+      try { io.to(room).emit('game:round_started', info); } catch (e) { console.error(e); }
+    },
+    emitRoundEnd: (result) => {
+      try { io.to(room).emit('game:round_ended', result); } catch (e) { console.error(e); }
+    },
+    emitWinner: (winner, isDraw) => {
+      try { io.to(room).emit('game:winner_announced', winner, isDraw); } catch (e) { console.error(e); }
+    },
+    emitStartingCountdown: (seconds) => {
+      try { io.to(room).emit('game:starting_countdown', seconds); } catch (e) { console.error(e); }
+    },
+    emitPlayerAnswered: (token, count, totalAlive) => {
+      try { io.to(room).emit('player:answered', { token, answerCount: count, totalAlive }); } catch (e) { console.error(e); }
+    },
+    emitForceLobby: () => {
+      try { io.to(room).emit('game:force_lobby'); } catch (e) { console.error(e); }
+    }
+  });
+
+  gameEngines.set(ch, engine);
+}
+
+setupSocketHandlers(io, gameEngines, database);
 
 // Render 및 외부 배포 환경 감지 헬퍼 함수
 function getEffectivePublicUrl(req?: express.Request): string {
@@ -114,13 +126,28 @@ function getEffectivePublicUrl(req?: express.Request): string {
   return '';
 }
 
-// 1. 상태 확인 API
+// 1. 상태 확인 API (5개 채널 종합 상태 반환)
 app.get('/api/health', (req, res) => {
+  const channelStatuses: Record<string, any> = {};
+  let totalAllPlayers = 0;
+  for (const ch of CHANNELS) {
+    const eng = gameEngines.get(ch)!;
+    const st = eng.getState();
+    totalAllPlayers += st.players.length;
+    channelStatuses[ch] = {
+      status: st.status,
+      players: st.players.length,
+      survivors: st.survivors.length,
+      currentRound: st.currentRound
+    };
+  }
+
   res.json({
     status: 'ok',
     environment: isProduction ? 'production' : 'development',
-    gameStatus: gameEngine.getState().status,
-    totalPlayers: gameEngine.getState().players.length,
+    totalChannels: CHANNELS.length,
+    totalAllPlayers,
+    channels: channelStatuses,
     publicUrl: getEffectivePublicUrl(req) || null,
     timestamp: new Date().toISOString()
   });
@@ -141,8 +168,9 @@ app.get('/api/quizzes', (req, res) => {
 app.get('/api/export-excel', (req, res) => {
   try {
     const gameId = req.query.gameId as string | undefined;
+    const channel = req.query.channel as string | undefined;
     const buffer = database.generateExcelBuffer(gameId);
-    const filename = `100_quiz_result_${Date.now()}.xlsx`;
+    const filename = channel ? `quiz_result_${channel}_${Date.now()}.xlsx` : `quiz_result_${Date.now()}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

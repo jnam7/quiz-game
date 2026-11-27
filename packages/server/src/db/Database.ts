@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { QuizItem, GameState, INITIAL_QUIZ_BANK, ADMIN_PASSWORD } from '@quiz/shared';
+import { QuizItem, GameState, INITIAL_QUIZ_BANK, ADMIN_PASSWORD, DEFAULT_CHANNEL_PASSWORDS, normalizeChannel, ChannelId, CHANNELS } from '@quiz/shared';
 import * as XLSX from 'xlsx';
 
 export interface GameHistoryRecord {
@@ -26,6 +26,7 @@ export class JsonDatabase {
   private quizzes: QuizItem[] = [];
   private history: GameHistoryRecord[] = [];
   private adminPassword?: string;
+  private channelPasswords: Record<string, string> = {};
 
   constructor() {
     const dataDir = path.resolve(__dirname, '../../data');
@@ -37,7 +38,24 @@ export class JsonDatabase {
   }
 
   public getAdminPassword(): string {
+    return this.getMasterPassword();
+  }
+
+  public getMasterPassword(): string {
     return this.adminPassword || process.env.ADMIN_PASSWORD || ADMIN_PASSWORD || 'admin123';
+  }
+
+  public getChannelPassword(channel: string): string {
+    const ch = normalizeChannel(channel);
+    const envKey = `${ch.toUpperCase()}_ADMIN_PASSWORD`;
+    return process.env[envKey] || this.channelPasswords[ch] || DEFAULT_CHANNEL_PASSWORDS[ch] || `${ch}pass`;
+  }
+
+  public setChannelPassword(channel: string, newPassword: string): boolean {
+    const ch = normalizeChannel(channel);
+    this.channelPasswords[ch] = newPassword;
+    this.saveDatabase();
+    return true;
   }
 
   public setAdminPassword(newPassword: string): boolean {
@@ -55,6 +73,7 @@ export class JsonDatabase {
         this.quizzes = parsed.quizzes || INITIAL_QUIZ_BANK;
         this.history = parsed.history || [];
         this.adminPassword = parsed.adminPassword || defaultPw;
+        this.channelPasswords = parsed.channelPasswords || {};
         // 모든 문제의 기본 제한시간을 15초로 동기화
         this.quizzes.forEach(q => { q.timeLimit = 15; });
 
@@ -93,6 +112,7 @@ export class JsonDatabase {
         quizzes: this.quizzes,
         history: this.history,
         adminPassword: this.adminPassword || defaultPw,
+        channelPasswords: this.channelPasswords,
         updatedAt: new Date().toISOString()
       };
       fs.writeFileSync(this.dbPath, JSON.stringify(data, null, 2), 'utf-8');

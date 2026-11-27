@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GameState, Player, RoundInfo, RoundResult, ChatMessage } from '@quiz/shared';
+import { GameState, Player, RoundInfo, RoundResult, ChatMessage, ChannelId, CHANNEL_NAMES } from '@quiz/shared';
 import { socket } from '../socket';
 import { soundEngine } from '../utils/sound';
 
-const TOKEN_KEY = 'quiz_survival_player_token';
-
 interface PlayerViewProps {
   gameState: GameState;
+  channel?: ChannelId;
+  onChannelChange?: (ch: ChannelId) => void;
 }
 
-export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
+export const PlayerView: React.FC<PlayerViewProps> = ({ gameState, channel }) => {
+  const currentChannel = channel || gameState.channel || 'ch1';
+  const TOKEN_KEY = `quiz_survival_player_token_${currentChannel}`;
+
+  const getSavedToken = () => {
+    return localStorage.getItem(TOKEN_KEY) || (currentChannel === 'ch1' ? localStorage.getItem('quiz_survival_player_token') : null);
+  };
   const [nicknameInput, setNicknameInput] = useState(() => localStorage.getItem('quiz_survival_player_nickname') || '');
   const [player, setPlayer] = useState<Player | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -76,18 +82,19 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
   // 1. 로컬 스토리지 토큰으로 자동 재접속/상태 복구 및 소켓 재연결 시 자동 재등록
   const restorePlayerSession = () => {
-    const savedToken = localStorage.getItem(TOKEN_KEY);
+    const savedToken = getSavedToken();
     const savedNick = localStorage.getItem('quiz_survival_player_nickname') || '';
     if (savedToken) {
       socket.emit('player:join', { nickname: savedNick, token: savedToken }, (res) => {
         if (res.success && res.player) {
           setPlayer(res.player);
           localStorage.setItem(TOKEN_KEY, res.player.token);
+          if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', res.player.token);
           localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
         } else {
           // 세션 복구 실패 시 (만료된 세션, 재시작된 서버 등)
-          // 잘못된 토큰을 지워 새로 깨끗이 입장할 수 있도록 처리
           localStorage.removeItem(TOKEN_KEY);
+          if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
           setPlayer(null);
         }
       });
@@ -96,13 +103,14 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
   // 참가자 자발적 퇴장 (뒤로가기, 창 닫기, 나가기 버튼 클릭 시)
   const handleLeaveLobby = (isUnload = false) => {
-    const savedToken = localStorage.getItem(TOKEN_KEY) || player?.token;
+    const savedToken = getSavedToken() || player?.token;
     if (savedToken) {
       try {
         socket.emit('player:leave', { token: savedToken });
       } catch {}
     }
     localStorage.removeItem(TOKEN_KEY);
+    if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
     setPlayer(null);
     if (!isUnload) {
       socket.disconnect();
@@ -115,20 +123,21 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
   // 스마트폰 뒤로가기(popstate) 및 창닫기(beforeunload, pagehide) 감지하여 즉시 퇴장 처리
   useEffect(() => {
     const onPopState = () => {
-      const savedToken = localStorage.getItem(TOKEN_KEY);
+      const savedToken = getSavedToken();
       if (savedToken || player) {
         handleLeaveLobby(false);
       }
     };
 
     const onBeforeUnload = () => {
-      const savedToken = localStorage.getItem(TOKEN_KEY);
+      const savedToken = getSavedToken();
       if (savedToken && gameState.status === 'WAITING') {
         try {
           socket.emit('player:leave', { token: savedToken });
           socket.disconnect();
         } catch {}
         localStorage.removeItem(TOKEN_KEY);
+        if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
       }
     };
 
@@ -255,6 +264,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
 
     const handlePlayerKickedAll = () => {
       localStorage.removeItem(TOKEN_KEY);
+      if (currentChannel === 'ch1') localStorage.removeItem('quiz_survival_player_token');
       setPlayer(null);
       setRoundInfo(undefined);
       setRoundResult(undefined);
@@ -314,6 +324,7 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
       if (res.success && res.player) {
         setPlayer(res.player);
         localStorage.setItem(TOKEN_KEY, res.player.token);
+        if (currentChannel === 'ch1') localStorage.setItem('quiz_survival_player_token', res.player.token);
         localStorage.setItem('quiz_survival_player_nickname', res.player.nickname);
         try {
           window.history.pushState({ inLobby: true }, '', window.location.href);
@@ -414,6 +425,11 @@ export const PlayerView: React.FC<PlayerViewProps> = ({ gameState }) => {
       <div style={{ ...mobileContainerStyle, justifyContent: 'center', textAlign: 'center' }}>
         <div style={{ padding: '20px 0', width: '100%' }}>
           <div style={{ fontSize: '3.2rem', marginBottom: '8px' }}>🔥</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid #6366f1', padding: '4px 14px', borderRadius: '20px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#a5b4fc' }}>
+              📡 {CHANNEL_NAMES[currentChannel]}
+            </span>
+          </div>
           <h1 style={{ fontSize: '1.75rem', color: '#818cf8', fontWeight: 900, marginBottom: '8px', wordBreak: 'keep-all' }}>
             서바이벌 퀴즈쇼
           </h1>

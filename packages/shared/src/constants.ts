@@ -1,4 +1,38 @@
-import { QuizCategory } from './types';
+import { QuizCategory, ChannelId } from './types';
+
+export const CHANNELS: ChannelId[] = ['ch1', 'ch2', 'ch3', 'ch4', 'ch5'];
+export const DEFAULT_CHANNEL: ChannelId = 'ch1';
+
+export const CHANNEL_NAMES: Record<ChannelId, string> = {
+  ch1: 'CH 1',
+  ch2: 'CH 2',
+  ch3: 'CH 3',
+  ch4: 'CH 4',
+  ch5: 'CH 5'
+};
+
+export const DEFAULT_CHANNEL_PASSWORDS: Record<ChannelId, string> = {
+  ch1: 'ch1pass',
+  ch2: 'ch2pass',
+  ch3: 'ch3pass',
+  ch4: 'ch4pass',
+  ch5: 'ch5pass'
+};
+
+export const normalizeChannel = (ch?: string | null): ChannelId => {
+  if (!ch) return 'ch1';
+  const clean = String(ch).toLowerCase().trim();
+  if (clean === '1' || clean === 'ch1') return 'ch1';
+  if (clean === '2' || clean === 'ch2') return 'ch2';
+  if (clean === '3' || clean === 'ch3') return 'ch3';
+  if (clean === '4' || clean === 'ch4') return 'ch4';
+  if (clean === '5' || clean === 'ch5') return 'ch5';
+  return 'ch1';
+};
+
+export const getChannelRoom = (ch: string): string => {
+  return `channel_${normalizeChannel(ch)}`;
+};
 
 export const MAX_PLAYERS = 300;
 

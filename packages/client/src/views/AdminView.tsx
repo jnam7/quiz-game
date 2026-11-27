@@ -1,14 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { GameState, QuizItem, QuizCategory, RankedPlayer, ALL_QUIZ_CATEGORIES, SoundEffectType } from '@quiz/shared';
+import {
+  GameState,
+  QuizItem,
+  QuizCategory,
+  RankedPlayer,
+  ALL_QUIZ_CATEGORIES,
+  SoundEffectType,
+  ChannelId,
+  CHANNELS,
+  CHANNEL_NAMES,
+  ChannelSummary,
+  AdminRole,
+  normalizeChannel
+} from '@quiz/shared';
 import { socket } from '../socket';
 import QRCode from 'qrcode';
 
 interface AdminViewProps {
   gameState: GameState;
+  channel?: ChannelId;
+  onChannelChange?: (ch: ChannelId) => void;
 }
 
-export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
+export const AdminView: React.FC<AdminViewProps> = ({ gameState, channel, onChannelChange }) => {
+  const currentParamChannel = channel || gameState.channel || 'ch1';
+  const [activeChannel, setActiveChannel] = useState<ChannelId>(currentParamChannel);
+  const [selectedLoginChannel, setSelectedLoginChannel] = useState<ChannelId>(currentParamChannel);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
+  const [allowedChannels, setAllowedChannels] = useState<ChannelId[]>([]);
+  const [allChannelsSummary, setAllChannelsSummary] = useState<Record<ChannelId, ChannelSummary> | null>(null);
+
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    if (channel && channel !== activeChannel) {
+      setActiveChannel(channel);
+      setSelectedLoginChannel(channel);
+    }
+  }, [channel]);
+
+  // 마스터 관리자일 경우 전체 5개 채널 상태 주기적 동기화
+  useEffect(() => {
+    if (!isAuthenticated || adminRole !== 'MASTER') return;
+
+    const fetchAllSummary = () => {
+      socket.emit('admin:get_all_channels_status', (res) => {
+        if (res?.success && res.channels) {
+          setAllChannelsSummary(res.channels);
+        }
+      });
+    };
+
+    fetchAllSummary();
+    const interval = setInterval(fetchAllSummary, 2500);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, adminRole]);
+
+  // 마스터 관리자 채널 전환 핸들러
+  const handleSwitchChannel = (newCh: ChannelId) => {
+    setActiveChannel(newCh);
+    onChannelChange?.(newCh);
+    socket.emit('channel:join', { channel: newCh });
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -17,11 +73,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // 인증 상태
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [authError, setAuthError] = useState('');
 
   // 문제 목록 및 서버 정보
   const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
@@ -176,8 +227,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
     } else {
       target = serverInfo?.publicUrl || publicUrl || (typeof window !== 'undefined' ? window.location.origin : '');
     }
+    const chNum = (activeChannel || 'ch1').replace('ch', '');
+    target += (target.includes('?') ? '&' : '?') + `ch=${chNum}`;
     if (qrSession) {
-      target += (target.includes('?') ? '&' : '?') + `session=${qrSession}`;
+      target += `&session=${qrSession}`;
     }
     return target;
   };
@@ -251,13 +304,26 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    socket.emit('admin:auth', passwordInput, (res) => {
+    setAuthError('');
+    if (!passwordInput.trim()) {
+      setAuthError('비밀번호를 입력해주세요.');
+      return;
+    }
+
+    socket.emit('admin:auth', {
+      password: passwordInput.trim(),
+      channel: selectedLoginChannel
+    }, (res) => {
       if (res.success) {
         setIsAuthenticated(true);
         setAuthError('');
+        setAdminRole(res.role || 'CHANNEL');
+        setAllowedChannels(res.allowedChannels || [selectedLoginChannel]);
+        setActiveChannel(selectedLoginChannel);
+        onChannelChange?.(selectedLoginChannel);
         loadQuizzes();
       } else {
-        setAuthError('관리자 비밀번호가 일치하지 않습니다.');
+        setAuthError(res.message || '관리자 비밀번호가 일치하지 않습니다.');
       }
     });
   };
@@ -422,7 +488,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
   };
 
   const handleDownloadExcel = () => {
-    window.open('/api/export-excel', '_blank');
+    window.open(`/api/export-excel?channel=${activeChannel}`, '_blank');
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -541,22 +607,66 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
             서바이벌 퀴즈쇼 행사 총괄 센터
           </p>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-            <input
-              type="password"
-              placeholder="관리자 비밀번호 입력"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              style={{
-                width: '100%',
-                height: '48px',
-                padding: '0 14px',
-                fontSize: '1rem',
-                borderRadius: '10px',
-                border: '1px solid #475569',
-                background: '#0f172a',
-                color: 'white'
-              }}
-            />
+            {/* 채널 선택 버튼 그룹 */}
+            <div style={{ textAlign: 'left' }}>
+              <label style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'block', marginBottom: '8px', fontWeight: 700 }}>
+                🎯 관리 대상 채널 선택
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                {CHANNELS.map((ch) => {
+                  const isSelected = selectedLoginChannel === ch;
+                  return (
+                    <button
+                      key={ch}
+                      type="button"
+                      onClick={() => setSelectedLoginChannel(ch)}
+                      style={{
+                        padding: '10px 4px',
+                        borderRadius: '8px',
+                        background: isSelected ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#0f172a',
+                        border: isSelected ? '2px solid #818cf8' : '1px solid #334155',
+                        color: isSelected ? '#ffffff' : '#94a3b8',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {CHANNEL_NAMES[ch]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'left' }}>
+              <label style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'block', marginBottom: '8px', fontWeight: 700 }}>
+                🔑 비밀번호
+              </label>
+              <input
+                type="password"
+                placeholder="채널 또는 마스터 관리자 비밀번호 입력"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  padding: '0 14px',
+                  fontSize: '0.95rem',
+                  borderRadius: '10px',
+                  border: '1px solid #475569',
+                  background: '#0f172a',
+                  color: 'white',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: '#64748b', textAlign: 'left', lineHeight: 1.45, background: '#0f172a', padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155' }}>
+              💡 <strong>채널 비밀번호</strong>: 선택한 채널({CHANNEL_NAMES[selectedLoginChannel]}) 전용 제어<br />
+              👑 <strong>마스터 비밀번호</strong>: 5개 채널 전체 모니터링 & 전환 제어
+            </div>
+
             {authError && (
               <div style={{ color: '#f87171', fontSize: '0.85rem', fontWeight: 600 }}>
                 {authError}
@@ -615,13 +725,31 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           flexWrap: 'wrap',
           gap: '10px'
         }}>
-          {/* 좌측: 타이틀, 상태 뱃지, 실시간 참가자 카운터 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {/* 좌측: 타이틀, 채널 및 역할 뱃지, 상태 뱃지, 실시간 참가자 카운터 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: isMobile ? '1.2rem' : '1.4rem' }}>🛠️</span>
               <span style={{ fontSize: isMobile ? '1rem' : '1.2rem', fontWeight: 900, color: '#f8fafc' }}>
                 퀴즈 컨트롤 타워
               </span>
+            </div>
+
+            {/* 현재 관리 채널 및 권한 뱃지 */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '8px',
+              background: adminRole === 'MASTER' ? 'rgba(217, 119, 6, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+              border: adminRole === 'MASTER' ? '1px solid #f59e0b' : '1px solid #3b82f6',
+              color: adminRole === 'MASTER' ? '#fbbf24' : '#60a5fa',
+              fontSize: '0.8rem',
+              fontWeight: 800
+            }}>
+              <span>{adminRole === 'MASTER' ? '👑 마스터 총괄' : `🔒 ${CHANNEL_NAMES[activeChannel]} 전용`}</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span style={{ color: '#ffffff' }}>{CHANNEL_NAMES[activeChannel]} 제어 중</span>
             </div>
 
             {/* 현재 상태 뱃지 */}
@@ -741,6 +869,80 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
           </div>
         </div>
       </header>
+
+      {/* 마스터 관리자 전용: 5개 채널 종합 스위처 탭 바 */}
+      {adminRole === 'MASTER' && (
+        <div style={{
+          background: '#0b1120',
+          borderBottom: '1px solid #1e293b',
+          padding: isMobile ? '8px 12px' : '10px 24px',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            overflowX: 'auto',
+            paddingBottom: isMobile ? '4px' : '0'
+          }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap', marginRight: '4px' }}>
+              📡 채널 전환:
+            </span>
+            {CHANNELS.map((ch) => {
+              const isCurrent = activeChannel === ch;
+              const chSummary = allChannelsSummary?.[ch];
+              const pCount = chSummary?.playerCount ?? (isCurrent ? gameState.players.length : 0);
+              const sStatus = chSummary?.status ?? (isCurrent ? gameState.status : 'WAITING');
+
+              const getStatusShort = (s: string) => {
+                if (s === 'IN_ROUND') return '풀이중';
+                if (s === 'QUESTION_READING') return '낭독중';
+                if (s === 'ROUND_RESULT') return '결과';
+                if (s === 'GAME_OVER') return '종료';
+                return '대기';
+              };
+
+              return (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => handleSwitchChannel(ch)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: isMobile ? '6px 12px' : '8px 16px',
+                    borderRadius: '10px',
+                    background: isCurrent ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#1e293b',
+                    border: isCurrent ? '2px solid #818cf8' : '1px solid #334155',
+                    color: isCurrent ? '#ffffff' : '#cbd5e1',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: isCurrent ? '0 0 14px rgba(99, 102, 241, 0.45)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>{CHANNEL_NAMES[ch]}</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: isCurrent ? 'rgba(255, 255, 255, 0.25)' : 'rgba(15, 23, 42, 0.8)',
+                    color: isCurrent ? '#ffffff' : '#94a3b8',
+                    fontWeight: 700
+                  }}>
+                    {pCount}명 • {getStatusShort(sStatus)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 메인 컨테이너 */}
       <main style={{
@@ -1464,7 +1666,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ gameState }) => {
                 {qrCodeDataUrl && (
                   <a
                     href={qrCodeDataUrl}
-                    download={currentQrMode === 'WIFI' ? 'quiz-qr-internal-wifi.png' : 'quiz-qr-external-lte.png'}
+                    download={currentQrMode === 'WIFI' ? `quiz-qr-${activeChannel}-internal-wifi.png` : `quiz-qr-${activeChannel}-external-lte.png`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',

@@ -1,11 +1,19 @@
 import { io, Socket } from 'socket.io-client';
-import { ClientToServerEvents, ServerToClientEvents } from '@quiz/shared';
+import { ClientToServerEvents, ServerToClientEvents, normalizeChannel } from '@quiz/shared';
 
 // 스마트폰 접속 시 3000번 포트의 프록시를 통해 4000번 소켓 서버와 연결 (방화벽 및 단일 포트 호환)
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || window.location.origin;
 
+function getInitialChannel(): string {
+  if (typeof window === 'undefined') return 'ch1';
+  return normalizeChannel(new URLSearchParams(window.location.search).get('ch'));
+}
+
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
   autoConnect: false,
+  query: {
+    ch: getInitialChannel()
+  },
   transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionAttempts: Infinity,

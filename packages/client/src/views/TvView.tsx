@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GameState, RoundInfo, RoundResult, Player, ChatMessage, calculateReadingDelay } from '@quiz/shared';
+import { GameState, RoundInfo, RoundResult, Player, ChatMessage, calculateReadingDelay, ChannelId, CHANNEL_NAMES } from '@quiz/shared';
 import { socket } from '../socket';
 import { soundEngine } from '../utils/sound';
 import confetti from 'canvas-confetti';
@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 
 interface TvViewProps {
   gameState: GameState;
+  channel?: ChannelId;
 }
 
 // 자연스러운 고품질 한국어 뉴럴 보이스 우선 탐색 함수
@@ -35,7 +36,9 @@ const getBestKoreanVoice = (): SpeechSynthesisVoice | null => {
   return koreanVoices.find(v => v.default) || koreanVoices[0];
 };
 
-export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
+export const TvView: React.FC<TvViewProps> = ({ gameState, channel }) => {
+  const currentChannel = channel || gameState.channel || 'ch1';
+  const chNum = currentChannel.replace('ch', '');
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
 
   useEffect(() => {
@@ -198,8 +201,9 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             targetUrl = info.publicUrl || window.location.origin;
           }
 
+          targetUrl += (targetUrl.includes('?') ? '&' : '?') + `ch=${chNum}`;
           if (qrSession) {
-            targetUrl += (targetUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+            targetUrl += `&session=${qrSession}`;
           }
 
           setJoinUrlText(targetUrl);
@@ -209,8 +213,9 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         })
         .catch(() => {
           let fallbackUrl = window.location.origin;
+          fallbackUrl += (fallbackUrl.includes('?') ? '&' : '?') + `ch=${chNum}`;
           if (qrSession) {
-            fallbackUrl += (fallbackUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+            fallbackUrl += `&session=${qrSession}`;
           }
           setJoinUrlText(fallbackUrl);
           QRCode.toDataURL(fallbackUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
@@ -278,8 +283,9 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
     const handleTunnelUpdated = (newPublicUrl: string) => {
       if (qrMode === 'EXTERNAL' && newPublicUrl) {
         let targetUrl = newPublicUrl;
+        targetUrl += (targetUrl.includes('?') ? '&' : '?') + `ch=${chNum}`;
         if (qrSession) {
-          targetUrl += (targetUrl.includes('?') ? '&' : '?') + `session=${qrSession}`;
+          targetUrl += `&session=${qrSession}`;
         }
         setJoinUrlText(targetUrl);
         QRCode.toDataURL(targetUrl, { width: 320, margin: 2, color: { dark: '#ffffff', light: '#00000000' } })
@@ -707,6 +713,18 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '16px', flexWrap: 'wrap' }}>
           <div
             style={{
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              padding: isMobile ? '6px 14px' : '8px 18px',
+              borderRadius: '9999px',
+              fontSize: isMobile ? '1rem' : '1.25rem',
+              fontWeight: 900,
+              boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
+            }}
+          >
+            {CHANNEL_NAMES[currentChannel]}
+          </div>
+          <div
+            style={{
               background: 'linear-gradient(135deg, #6366f1, #a855f7)',
               padding: isMobile ? '6px 14px' : '8px 22px',
               borderRadius: '9999px',
@@ -788,9 +806,22 @@ export const TvView: React.FC<TvViewProps> = ({ gameState }) => {
             {/* 2. 대기실 상태: 초대형 QR코드 및 도전자 현황 */}
             {gameState.status === 'WAITING' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '10px 0' : '0' }}>
-          <h1 style={{ fontSize: isMobile ? '1.6rem' : '3.2rem', fontWeight: 900, color: '#818cf8', marginBottom: '8px', textAlign: 'center', textShadow: '0 0 30px rgba(129, 140, 248, 0.6)', wordBreak: 'keep-all' }}>
-            🔥 서바이벌 퀴즈쇼 대기실 🔥
-          </h1>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              color: '#ffffff',
+              fontSize: isMobile ? '1.1rem' : '1.5rem',
+              fontWeight: 900,
+              padding: '4px 16px',
+              borderRadius: '12px',
+              boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
+            }}>
+              {CHANNEL_NAMES[currentChannel]}
+            </span>
+            <h1 style={{ fontSize: isMobile ? '1.6rem' : '3.2rem', fontWeight: 900, color: '#818cf8', margin: 0, textShadow: '0 0 30px rgba(129, 140, 248, 0.6)', wordBreak: 'keep-all' }}>
+              🔥 서바이벌 퀴즈쇼 대기실 🔥
+            </h1>
+          </div>
           <p style={{ fontSize: isMobile ? '0.95rem' : '1.4rem', color: '#cbd5e1', marginBottom: isMobile ? '14px' : '20px', textAlign: 'center', wordBreak: 'keep-all' }}>
             스마트폰 카메라로 아래 QR코드를 스캔하여 지금 즉시 접속하세요!
           </p>

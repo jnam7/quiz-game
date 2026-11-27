@@ -1,3 +1,17 @@
+export type ChannelId = 'ch1' | 'ch2' | 'ch3' | 'ch4' | 'ch5';
+export type AdminRole = 'MASTER' | 'CHANNEL';
+
+export interface ChannelSummary {
+  channel: ChannelId;
+  name: string;
+  status: GameStatus;
+  playerCount: number;
+  survivorCount: number;
+  currentRound: number;
+  totalRounds: number;
+  winner: string | null;
+}
+
 export type QuizCategory =
   | '일반 상식'
   | '넌센스'
@@ -103,6 +117,7 @@ export interface RankedPlayer {
 }
 
 export interface GameState {
+  channel?: ChannelId;
   gameId: string;
   status: GameStatus;
   currentRound: number;
@@ -131,6 +146,12 @@ export interface ChatMessage {
 
 // Socket 이벤트 규약
 export interface ClientToServerEvents {
+  // 채널 조인 및 전환
+  'channel:join': (
+    data: { channel: ChannelId },
+    callback?: (res: { success: boolean; channel: ChannelId; state?: GameState }) => void
+  ) => void;
+
   // 참가자
   'player:join': (
     data: { nickname: string; token?: string },
@@ -156,7 +177,19 @@ export interface ClientToServerEvents {
   'round:open_options': () => void; // TV TTS 낭독 완료 또는 타이머로 보기 오픈 요청
 
   // 관리자
-  'admin:auth': (password: string, callback: (res: { success: boolean }) => void) => void;
+  'admin:auth': (
+    data: string | { password: string; channel?: ChannelId },
+    callback: (res: {
+      success: boolean;
+      role?: AdminRole;
+      allowedChannels?: ChannelId[];
+      currentChannel?: ChannelId;
+      message?: string;
+    }) => void
+  ) => void;
+  'admin:get_all_channels_status': (
+    callback: (res: { success: boolean; channels?: Record<ChannelId, ChannelSummary>; message?: string }) => void
+  ) => void;
   'admin:change_password': (
     data: { currentPassword: string; newPassword: string },
     callback: (res: { success: boolean; message?: string }) => void
